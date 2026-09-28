@@ -114,6 +114,7 @@ class GameClient {
     this.avatarPreview = document.getElementById('snake-avatar-preview');
     this.myTierBadge = document.getElementById('my-tier-badge');
     this.btnCopyInvite = document.getElementById('btn-copy-invite');
+    this.btnInviteOnlineFriends = document.getElementById('btn-invite-online-friends');
     this.lobbyRoomCode = document.getElementById('lobby-room-code');
     this.lobbyOnlineCount = document.getElementById('lobby-online-count');
     this.btnRefreshRank = document.getElementById('btn-refresh-rank');
@@ -274,7 +275,6 @@ class GameClient {
   }
 
   async initLobby() {
-    // Check URL parameters for custom room code
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = urlParams.get('room');
     if (roomParam) {
@@ -284,7 +284,6 @@ class GameClient {
       }
     }
 
-    // Check permanent account login
     await this.checkAuth();
 
     if (!this.currentUser) {
@@ -298,7 +297,7 @@ class GameClient {
     this.updateAvatarPreview();
     this.fetchGlobalLeaderboard();
 
-    // Connect WebSocket early for lobby presence, friends, and chat
+    // Connect WebSocket early for presence, friends, and chat
     this.connectWebSocket();
   }
 
@@ -316,7 +315,6 @@ class GameClient {
       if (data.success && data.user) {
         this.currentUser = data.user;
         this.applyLoggedInUI(data.user);
-        this.loadFriendsData();
       } else {
         localStorage.removeItem('snake_auth_token');
         this.authToken = null;
@@ -355,8 +353,8 @@ class GameClient {
     }
 
     this.updateCareerUI();
+    this.loadFriendsData();
 
-    // Authenticate existing socket if connected
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
         type: 'LOBBY_AUTH',
@@ -552,6 +550,19 @@ class GameClient {
         this.showToast(`🎉 ${msg.message || 'Lời mời kết bạn đã được chấp nhận!'}`);
         break;
 
+      case 'FRIEND_REQUEST_RESULT':
+        if (msg.success) {
+          this.showToast(`📤 ${msg.message || 'Đã gửi lời mời kết bạn!'}`);
+          if (msg.autoAccepted && msg.friend) {
+            this.friends.unshift(msg.friend);
+            this.renderFriendsList();
+            this.updateFriendsBadge();
+          }
+        } else {
+          this.showToast(`⚠️ ${msg.error || 'Không thể gửi lời mời kết bạn!'}`);
+        }
+        break;
+
       case 'FRIEND_PRESENCE_UPDATE':
         const targetFriend = this.friends.find(f => f.username.toLowerCase() === msg.friendName.toLowerCase());
         if (targetFriend) {
@@ -575,14 +586,34 @@ class GameClient {
         this.handleRoomInvite(msg);
         break;
 
+      case 'INVITE_RESULT':
+        if (msg.success) {
+          this.showToast(`⚔️ ${msg.message || 'Đã gửi lời mời vào phòng!'}`);
+        } else {
+          this.showToast(`⚠️ ${msg.error || 'Không thể gửi lời mời!'}`);
+        }
+        break;
+
       case 'FRIEND_POKED':
         window.soundEngine.playPoke();
         this.showToast(`👋 ${msg.from} vừa vẫy tay chào bạn!`);
         break;
 
+      case 'POKE_RESULT':
+        if (msg.success) {
+          this.showToast(`👋 ${msg.message || 'Đã vẫy tay!'}`);
+        }
+        break;
+
       case 'PLAYER_COMMENDED':
         window.soundEngine.playLike();
         this.showToast(`❤️ Dũng sĩ ${msg.from} đã khen ngợi phong độ của bạn!`);
+        break;
+
+      case 'COMMEND_RESULT':
+        if (msg.success) {
+          this.showToast(`❤️ ${msg.message || 'Đã gửi lời khen ngợi!'}`);
+        }
         break;
 
       case 'LOBBY_CHAT_MESSAGE':
@@ -678,7 +709,6 @@ class GameClient {
   }
 
   updateGameState(msg) {
-    // 1. Delta Food
     if (msg.foodEaten && msg.foodEaten.length > 0) {
       for (let i = 0; i < msg.foodEaten.length; i++) {
         this.foods.delete(msg.foodEaten[i]);
@@ -691,15 +721,12 @@ class GameClient {
       }
     }
 
-    // 2. Powerups
     if (msg.powerups) {
       this.powerups = msg.powerups;
     }
 
-    // 3. Renderer sync
     this.renderer.syncServerSnakes(msg.snakes);
 
-    // 4. Local snake stats
     const mySnake = msg.snakes.find(s => s.id === this.localPlayerId);
     if (mySnake) {
       const prevScore = parseInt(this.statScoreEl.textContent, 10) || 0;
@@ -713,7 +740,6 @@ class GameClient {
       this.updateSkillHotbar(mySnake);
     }
 
-    // 5. Timer
     const mins = Math.floor(msg.timeRemaining / 60);
     const secs = msg.timeRemaining % 60;
     const timerStr = `⏱️ ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -727,7 +753,6 @@ class GameClient {
       }
     }
 
-    // 6. Player count
     const activeHuman = msg.snakes.filter(s => !s.isBot).length;
     const countStr = `👥 ${activeHuman} người chơi | ${msg.snakes.length} rắn`;
     if (countStr !== this.lastPlayerCountText) {
@@ -738,14 +763,12 @@ class GameClient {
       }
     }
 
-    // 7. In-game Leaderboard
     const now = performance.now();
     if (now - this.lastLeaderboardRender >= 250) {
       this.lastLeaderboardRender = now;
       this.renderLeaderboard(msg.leaderboard);
     }
 
-    // Intermission countdown sync
     if (msg.isIntermission && !this.modalMatchOver.classList.contains('hidden')) {
       this.intermissionTimeEl.textContent = `Vòng đấu mới trong: ${msg.intermissionTimer}s`;
     }
@@ -863,7 +886,6 @@ class GameClient {
       this.matchOverSubtitle.textContent = 'Bảng vinh danh chiến binh và tổng kết chiến tích';
     }
 
-    // Top 3 Podium
     const r1 = this.currentMatchRankings[0];
     const r2 = this.currentMatchRankings[1];
     const r3 = this.currentMatchRankings[2];
@@ -892,7 +914,6 @@ class GameClient {
       this.podiumThird.querySelector('.podium-kills').textContent = '-';
     }
 
-    // Personal Performance Card
     if (myEntry) {
       this.perfRank.textContent = `#${myRank} / ${this.currentMatchRankings.length}`;
       this.perfScore.textContent = myEntry.score.toLocaleString();
@@ -907,10 +928,8 @@ class GameClient {
       }
     }
 
-    // Render detailed match scoreboard
     this.renderMatchScoreboard();
 
-    // Intermission countdown bar
     let remaining = intermissionDuration || 8;
     const totalDuration = remaining;
     this.intermissionTimeEl.textContent = `Vòng đấu mới trong: ${remaining}s`;
@@ -975,7 +994,6 @@ class GameClient {
       this.matchScoreboardTbody.appendChild(tr);
     });
 
-    // Bind action buttons in table
     this.matchScoreboardTbody.querySelectorAll('.btn-add-friend').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.dataset.username;
@@ -1088,6 +1106,7 @@ class GameClient {
 
   openFriendsModal() {
     if (this.modalFriends) {
+      this.closePrivateChat();
       this.modalFriends.classList.remove('hidden');
       if (this.currentUser) {
         this.loadFriendsData();
@@ -1098,6 +1117,7 @@ class GameClient {
 
   closeFriendsModal() {
     if (this.modalFriends) {
+      this.closePrivateChat();
       this.modalFriends.classList.add('hidden');
     }
   }
@@ -1121,6 +1141,7 @@ class GameClient {
 
     if (tabName === 'friends') this.renderFriendsList();
     if (tabName === 'requests') this.renderFriendRequests();
+    if (tabName === 'search') this.searchFriends(this.inputSearchFriend ? this.inputSearchFriend.value : '');
   }
 
   async loadFriendsData() {
@@ -1230,7 +1251,7 @@ class GameClient {
               <span class="friend-name">${f.username}</span>
               <span class="friend-tier-pill">${f.tier || '🥉 Đồng'}</span>
             </div>
-            <span class="friend-status-desc ${statusClass}">${statusDesc} • Kỷ lục: ${f.highScore || 0}</span>
+            <span class="friend-status-desc ${statusClass}">${statusDesc} • Kỷ lục: ${(f.highScore || 0).toLocaleString()}</span>
           </div>
         </div>
         <div class="friend-actions-group">
@@ -1245,7 +1266,6 @@ class GameClient {
       this.friendsListContainer.appendChild(card);
     });
 
-    // Action button listeners
     this.friendsListContainer.querySelectorAll('.btn-f-invite').forEach(btn => {
       btn.addEventListener('click', () => this.inviteFriendToRoom(btn.dataset.username));
     });
@@ -1291,7 +1311,7 @@ class GameClient {
               <span class="friend-name">${req.from}</span>
               <span class="friend-tier-pill">${req.tier || '🥉 Đồng'}</span>
             </div>
-            <span class="friend-status-desc">Kỷ lục: ${req.highScore || 0} • Kills: ${req.totalKills || 0}</span>
+            <span class="friend-status-desc">Kỷ lục: ${(req.highScore || 0).toLocaleString()} • Kills: ${req.totalKills || 0}</span>
           </div>
         </div>
         <div class="friend-actions-group">
@@ -1312,10 +1332,9 @@ class GameClient {
 
   async searchFriends(query) {
     if (!this.searchResultsContainer) return;
-    const cleanQ = query.trim();
-    if (!cleanQ) return;
+    const cleanQ = (query || '').trim();
 
-    this.searchResultsContainer.innerHTML = '<div style="text-align:center; padding: 20px; color:#94a3b8;">Đang tìm kiếm...</div>';
+    this.searchResultsContainer.innerHTML = '<div style="text-align:center; padding: 20px; color:#94a3b8;">Đang tìm kiếm gợi ý...</div>';
 
     try {
       const url = `/api/friends/search?q=${encodeURIComponent(cleanQ)}`;
@@ -1328,7 +1347,7 @@ class GameClient {
         this.searchResultsContainer.innerHTML = `
           <div class="empty-state-box">
             <div class="empty-state-icon">🔍</div>
-            <p>Không tìm thấy dũng sĩ nào khớp với từ khóa "${cleanQ}".</p>
+            <p>${cleanQ ? `Không tìm thấy dũng sĩ nào khớp với "${cleanQ}".` : 'Chưa có dũng sĩ nào khác đăng ký.'}</p>
           </div>
         `;
         return;
@@ -1358,7 +1377,7 @@ class GameClient {
                 <span class="friend-name">${u.username}</span>
                 <span class="friend-tier-pill">${u.tier || '🥉 Đồng'}</span>
               </div>
-              <span class="friend-status-desc">Kỷ lục: ${u.highScore || 0} • Kills: ${u.totalKills || 0}</span>
+              <span class="friend-status-desc">Kỷ lục: ${(u.highScore || 0).toLocaleString()} • Kills: ${u.totalKills || 0}</span>
             </div>
           </div>
           <div class="friend-actions-group">
@@ -1375,6 +1394,12 @@ class GameClient {
           this.sendFriendRequest(btn.dataset.username);
           btn.textContent = '⏳ Đã Gửi';
           btn.disabled = true;
+        });
+      });
+
+      this.searchResultsContainer.querySelectorAll('.btn-accept-req').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.respondFriendRequest(btn.dataset.username, true);
         });
       });
 
@@ -1400,7 +1425,6 @@ class GameClient {
         type: 'FRIEND_REQUEST_SEND',
         toUsername: targetUsername,
       }));
-      this.showToast(`📤 Đã gửi lời mời kết bạn tới "${targetUsername}"!`);
     } else {
       fetch('/api/friends/send', {
         method: 'POST',
@@ -1472,7 +1496,9 @@ class GameClient {
         toUsername: username,
         roomCode: this.roomCode,
       }));
-      this.showToast(`⚔️ Đã gửi lời mời tham chiến phòng #${this.roomCode} tới ${username}!`);
+      this.showToast(`⚔️ Đang gửi lời mời phòng #${this.roomCode} tới ${username}...`);
+    } else {
+      this.showToast(`⚠️ Chưa kết nối máy chủ!`);
     }
   }
 
@@ -1482,7 +1508,7 @@ class GameClient {
         type: 'POKE_FRIEND',
         toUsername: username,
       }));
-      this.showToast(`👋 Bạn vừa vẫy tay chào ${username}!`);
+      this.showToast(`👋 Đang vẫy tay chào ${username}...`);
     }
   }
 
@@ -1493,7 +1519,7 @@ class GameClient {
         type: 'COMMEND_PLAYER',
         targetName,
       }));
-      this.showToast(`❤️ Đã khen ngợi dũng sĩ ${targetName}!`);
+      this.showToast(`❤️ Đang gửi lời khen tới ${targetName}...`);
     }
   }
 
@@ -1504,15 +1530,21 @@ class GameClient {
       this.invitePromptRoom.textContent = `#${data.roomCode || 'ARENA-5V5'}`;
       this.invitePromptBox.classList.remove('hidden');
 
-      // Auto dismiss after 15s
       setTimeout(() => {
-        if (this.invitePromptBox) this.invitePromptBox.classList.add('hidden');
+        if (this.invitePromptBox && this.pendingRoomInvite === data) {
+          this.invitePromptBox.classList.add('hidden');
+          this.pendingRoomInvite = null;
+        }
       }, 15000);
     }
   }
 
   acceptPendingInvite() {
-    if (!this.pendingRoomInvite) return;
+    if (!this.pendingRoomInvite) {
+      if (this.invitePromptBox) this.invitePromptBox.classList.add('hidden');
+      return;
+    }
+
     const room = this.pendingRoomInvite.roomCode || 'ARENA-5V5';
     this.roomCode = room;
     if (this.lobbyRoomCode) this.lobbyRoomCode.textContent = `#${room}`;
@@ -1520,6 +1552,7 @@ class GameClient {
     if (this.invitePromptBox) this.invitePromptBox.classList.add('hidden');
     this.closeFriendsModal();
     this.showToast(`🚀 Đang tham gia phòng #${room}...`);
+    this.pendingRoomInvite = null;
     this.joinGame();
   }
 
@@ -1565,6 +1598,8 @@ class GameClient {
         text: cleanText,
       }));
       if (this.inputLobbyChat) this.inputLobbyChat.value = '';
+    } else {
+      this.showToast('⚠️ Chưa kết nối máy chủ!');
     }
   }
 
@@ -1586,7 +1621,6 @@ class GameClient {
       }
       this.updatePrivateChatStatusText(friend ? friend.status : 'offline');
 
-      // Load private chat history
       if (this.privateChatMessagesEl) this.privateChatMessagesEl.innerHTML = '';
       try {
         const res = await fetch(`/api/chat/private?with=${encodeURIComponent(username)}`, {
@@ -1669,6 +1703,8 @@ class GameClient {
         text: cleanText,
       }));
       if (this.inputPrivateChat) this.inputPrivateChat.value = '';
+    } else {
+      this.showToast('⚠️ Chưa kết nối máy chủ!');
     }
   }
 
@@ -1708,7 +1744,6 @@ class GameClient {
         this.profileCardStatusBadge.style.color = stColor;
       }
 
-      // Actions in profile
       this.profileCardActions.innerHTML = '';
       const isFriend = this.friends.some(f => f.username.toLowerCase() === p.username.toLowerCase());
       const isSelf = this.currentUser && this.currentUser.username.toLowerCase() === p.username.toLowerCase();
@@ -1871,7 +1906,6 @@ class GameClient {
   // ================= EVENT LISTENERS =================
 
   bindEvents() {
-    // Skin selection
     this.skinOptions.forEach(opt => {
       opt.addEventListener('click', () => {
         this.skinOptions.forEach(o => o.classList.remove('active'));
@@ -1882,7 +1916,6 @@ class GameClient {
       });
     });
 
-    // Copy Invite Link
     if (this.btnCopyInvite) {
       this.btnCopyInvite.addEventListener('click', () => {
         const link = `${window.location.origin}${window.location.pathname}?room=${this.roomCode}`;
@@ -1896,7 +1929,19 @@ class GameClient {
       });
     }
 
-    // Refresh Leaderboard
+    if (this.btnInviteOnlineFriends) {
+      this.btnInviteOnlineFriends.addEventListener('click', () => {
+        this.openFriendsModal();
+        this.switchFriendsTab('friends');
+        const online = this.friends.filter(f => f.status === 'online' || f.status === 'in_game');
+        if (online.length > 0) {
+          this.showToast(`⚔️ Bấm nút [⚔️ Mời] cạnh bạn bè đang online để gửi lời mời tham chiến!`);
+        } else {
+          this.showToast(`💡 Chưa có bạn bè nào trực tuyến! Hãy sao chép link phòng gửi cho bạn bè hoặc kết bạn thêm!`);
+        }
+      });
+    }
+
     if (this.btnRefreshRank) {
       this.btnRefreshRank.addEventListener('click', () => {
         this.fetchGlobalLeaderboard();
@@ -1904,13 +1949,11 @@ class GameClient {
       });
     }
 
-    // Join button
     this.btnJoin.addEventListener('click', () => this.joinGame());
     this.inputName.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.joinGame();
     });
 
-    // Respawn button
     this.btnRespawn.addEventListener('click', () => {
       this.modalDeath.classList.add('hidden');
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -1918,13 +1961,11 @@ class GameClient {
       }
     });
 
-    // Return to Lobby buttons
     const returnLobby = () => this.returnToLobby();
     if (this.btnHudLobby) this.btnHudLobby.addEventListener('click', returnLobby);
     if (this.btnDeathLobby) this.btnDeathLobby.addEventListener('click', returnLobby);
     if (this.btnMatchoverLobby) this.btnMatchoverLobby.addEventListener('click', returnLobby);
 
-    // Match Over: Ready up & Share
     if (this.btnMatchoverReady) {
       this.btnMatchoverReady.addEventListener('click', () => {
         this.modalMatchOver.classList.add('hidden');
@@ -1939,7 +1980,6 @@ class GameClient {
       this.btnMatchoverShare.addEventListener('click', () => this.shareMatchBrag());
     }
 
-    // Sound toggle buttons
     const toggleSound = () => {
       const enabled = window.soundEngine.toggle();
       const icon = enabled ? '🔊' : '🔇';
@@ -1949,19 +1989,16 @@ class GameClient {
     if (this.btnMute) this.btnMute.addEventListener('click', toggleSound);
     if (this.btnLobbySound) this.btnLobbySound.addEventListener('click', toggleSound);
 
-    // Leaderboard panel toggle
     if (this.leaderboardToggle && this.leaderboardPanel) {
       this.leaderboardToggle.addEventListener('click', () => {
         this.leaderboardPanel.classList.toggle('collapsed');
       });
     }
 
-    // Power-up skill hotbar buttons
     if (this.btnSkillNitro) this.btnSkillNitro.addEventListener('click', () => this.usePowerup('nitro'));
     if (this.btnSkillVision) this.btnSkillVision.addEventListener('click', () => this.usePowerup('vision'));
     if (this.btnSkillMagnet) this.btnSkillMagnet.addEventListener('click', () => this.usePowerup('magnet'));
 
-    // Mobile touch boost
     if (this.btnTouchBoost) {
       const startBoost = (e) => {
         if (e.cancelable) e.preventDefault();
@@ -2066,7 +2103,7 @@ class GameClient {
     }
     if (this.btnInviteDecline) {
       this.btnInviteDecline.addEventListener('click', () => {
-        this.invitePromptBox.classList.add('hidden');
+        if (this.invitePromptBox) this.invitePromptBox.classList.add('hidden');
         this.pendingRoomInvite = null;
       });
     }

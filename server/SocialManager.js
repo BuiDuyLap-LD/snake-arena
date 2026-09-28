@@ -258,11 +258,15 @@ class SocialManager {
 
   // ================= CHAT ACTIONS =================
 
-  sendChatMessage(socketId, { type = 'lobby', to = null, text = '' }) {
+  sendChatMessage(socketId, data = {}) {
     const entry = this.sockets.get(socketId);
     if (!entry) return { success: false, error: 'Kết nối không hợp lệ' };
 
-    const cleanText = (text || '').trim();
+    const to = data.to || null;
+    const text = data.text || '';
+    const chatType = data.typeChat || data.chatType || data.target || (to ? 'private' : 'lobby');
+
+    const cleanText = text.trim();
     if (!cleanText || cleanText.length > 200) {
       return { success: false, error: 'Tin nhắn không hợp lệ (1-200 ký tự)' };
     }
@@ -289,7 +293,7 @@ class SocialManager {
       time: Date.now(),
     };
 
-    if (type === 'lobby') {
+    if (chatType === 'lobby') {
       this.lobbyChat.push(msgObj);
       if (this.lobbyChat.length > 60) this.lobbyChat.shift();
 
@@ -299,7 +303,7 @@ class SocialManager {
       });
 
       return { success: true, message: msgObj };
-    } else if (type === 'private' && to) {
+    } else if (chatType === 'private' && to) {
       if (entry.isGuest) {
         return { success: false, error: 'Bạn cần đăng nhập để nhắn tin riêng với bạn bè!' };
       }

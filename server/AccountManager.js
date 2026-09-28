@@ -386,10 +386,8 @@ class AccountManager {
     return { success: true };
   }
 
-  searchUsers(query, currentUsername, getStatusFn) {
-    if (!query || typeof query !== 'string') return [];
-    const q = query.trim().toLowerCase();
-    if (q.length < 1) return [];
+  searchUsers(query = '', currentUsername, getStatusFn) {
+    const q = typeof query === 'string' ? query.trim().toLowerCase() : '';
 
     const currentUser = this.getRawUser(currentUsername);
     const userFriends = currentUser && Array.isArray(currentUser.friends)
@@ -402,7 +400,7 @@ class AccountManager {
     const matches = [];
     for (const [key, u] of this.users.entries()) {
       if (currentUsername && key === currentUsername.toLowerCase()) continue;
-      if (u.username.toLowerCase().includes(q)) {
+      if (!q || u.username.toLowerCase().includes(q)) {
         const sanitized = this.sanitize(u);
         sanitized.status = typeof getStatusFn === 'function' ? getStatusFn(u.username) : 'offline';
 

@@ -23,6 +23,10 @@
   -webkit-user-select: none;
 }
 
+.hidden {
+  display: none !important;
+}
+
 body, html {
   width: 100%;
   height: 100%;
@@ -2448,8 +2452,8 @@ body, html {
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--bg-card);
-  backdrop-filter: blur(14px);
+  background: #0d1527;
+  border-radius: 22px;
   z-index: 10;
   padding: 20px 24px;
   display: flex;
