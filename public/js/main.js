@@ -50,6 +50,8 @@ class GameClient {
     this.btnRespawn = document.getElementById('btn-respawn');
     this.btnMute = document.getElementById('btn-mute');
     this.btnTouchBoost = document.getElementById('btn-touch-boost');
+    this.leaderboardPanel = document.getElementById('leaderboard-panel');
+    this.leaderboardToggle = document.getElementById('leaderboard-toggle');
 
     // Skin options
     this.skinOptions = document.querySelectorAll('.skin-option');
@@ -108,16 +110,32 @@ class GameClient {
       this.btnMute.textContent = enabled ? '🔊' : '🔇';
     });
 
-    // Touch boost
+    // Leaderboard toggle (mobile & desktop)
+    if (this.leaderboardToggle && this.leaderboardPanel) {
+      this.leaderboardToggle.addEventListener('click', () => {
+        this.leaderboardPanel.classList.toggle('collapsed');
+      });
+    }
+
+    // Touch / Click boost
     if (this.btnTouchBoost) {
-      this.btnTouchBoost.addEventListener('touchstart', (e) => {
-        e.preventDefault();
+      const startBoost = (e) => {
+        if (e.cancelable) e.preventDefault();
+        this.btnTouchBoost.classList.add('active');
         this.inputManager.setTouchBoost(true);
-      });
-      this.btnTouchBoost.addEventListener('touchend', (e) => {
-        e.preventDefault();
+      };
+      const endBoost = (e) => {
+        if (e.cancelable) e.preventDefault();
+        this.btnTouchBoost.classList.remove('active');
         this.inputManager.setTouchBoost(false);
-      });
+      };
+
+      this.btnTouchBoost.addEventListener('touchstart', startBoost, { passive: false });
+      this.btnTouchBoost.addEventListener('touchend', endBoost, { passive: false });
+      this.btnTouchBoost.addEventListener('touchcancel', endBoost, { passive: false });
+      this.btnTouchBoost.addEventListener('mousedown', startBoost);
+      this.btnTouchBoost.addEventListener('mouseup', endBoost);
+      this.btnTouchBoost.addEventListener('mouseleave', endBoost);
     }
   }
 

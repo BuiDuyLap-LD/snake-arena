@@ -481,42 +481,283 @@ body, html {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Mobile Controls */
+/* Leaderboard collapsible */
+.leaderboard-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--neon-gold);
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.lb-collapse-icon {
+  margin-left: auto;
+  font-size: 10px;
+  opacity: 0.7;
+  transition: transform 0.25s ease;
+}
+
+.leaderboard-panel.collapsed .leaderboard-list {
+  display: none;
+}
+
+.leaderboard-panel.collapsed .leaderboard-title {
+  margin-bottom: 0;
+}
+
+.leaderboard-panel.collapsed .lb-collapse-icon {
+  transform: rotate(180deg);
+}
+
+/* Mobile Controls Base */
 .mobile-controls {
   display: none;
 }
 
+/* ================= RESPONSIVE MOBILE STYLES ================= */
 @media (pointer: coarse), (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+
   .mobile-controls {
     display: block;
     position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
+    z-index: 50;
   }
-  
-  .boost-touch-btn {
+
+  /* Virtual Joystick */
+  .joystick-zone {
     position: absolute;
-    right: 25px;
-    bottom: 180px;
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #ff007f 0%, #aa0055 100%);
-    border: 2px solid #ff77bb;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 800;
-    pointer-events: auto;
-    box-shadow: 0 0 20px rgba(255, 0, 127, 0.5);
+    left: 20px;
+    bottom: 25px;
+    width: 130px;
+    height: 130px;
     display: flex;
     align-items: center;
     justify-content: center;
-    text-transform: uppercase;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
-  .boost-touch-btn:active {
+  .joystick-base {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.75) 0%, rgba(10, 15, 28, 0.9) 100%);
+    border: 2px solid rgba(0, 240, 255, 0.5);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), inset 0 0 15px rgba(0, 240, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    touch-action: none;
+  }
+
+  .joystick-label {
+    font-size: 22px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .joystick-thumb {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #00f0ff 0%, #007799 100%);
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.8);
+    pointer-events: none;
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+  }
+
+  /* Boost Touch Button */
+  .boost-touch-btn {
+    position: absolute;
+    right: 20px;
+    bottom: 30px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ff007f 0%, #990044 100%);
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    color: #fff;
+    pointer-events: auto;
+    box-shadow: 0 0 25px rgba(255, 0, 127, 0.55), inset 0 0 12px rgba(255, 255, 255, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+
+  .boost-touch-btn .boost-icon {
+    font-size: 24px;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .boost-touch-btn .boost-label {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    margin-top: 2px;
+    pointer-events: none;
+  }
+
+  .boost-touch-btn:active, .boost-touch-btn.active {
     transform: scale(0.92);
+    box-shadow: 0 0 35px rgba(255, 0, 127, 0.85), inset 0 0 18px rgba(255, 255, 255, 0.5);
+  }
+
+  /* Top Bar on Mobile */
+  .top-bar {
+    top: 8px;
+    padding: 6px 14px;
+    gap: 8px;
+    max-width: calc(100vw - 120px);
+  }
+
+  .match-timer {
+    font-size: 15px;
+    gap: 4px;
+  }
+
+  .player-count-badge {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  /* Floating sound toggle button moved to top-left */
+  .floating-btn {
+    top: 8px;
+    left: 8px;
+    bottom: auto;
+    right: auto;
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+    z-index: 60;
+  }
+
+  /* Collapsible Leaderboard top-right */
+  .leaderboard-panel {
+    top: 8px;
+    right: 8px;
+    width: 140px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    z-index: 60;
+  }
+
+  .leaderboard-title {
+    margin-bottom: 4px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .leaderboard-row {
+    font-size: 11px;
+    padding: 2px 0;
+  }
+
+  .row-left {
+    max-width: 75px;
+    gap: 4px;
+  }
+
+  .row-score {
+    font-size: 11px;
+  }
+
+  /* Kill Feed positioned under Mute button */
+  .kill-feed {
+    top: 52px;
+    left: 8px;
+    max-width: 170px;
+    gap: 4px;
+    pointer-events: none;
+  }
+
+  .kill-item {
+    font-size: 10px;
+    padding: 3px 6px;
+    background: rgba(15, 23, 42, 0.75);
+  }
+
+  /* Stats Panel positioned at top-center under top-bar, leaving bottom entirely for thumb controls */
+  .stats-panel {
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: auto;
+    padding: 4px 14px;
+    gap: 10px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.85);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    z-index: 40;
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
+
+  .stat-value {
+    font-size: 13px;
+  }
+
+  .hud-divider {
+    height: 12px;
+  }
+
+  /* Lobby Card Responsive */
+  .lobby-card {
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    margin-bottom: 18px;
+  }
+
+  .instructions-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .skin-selector {
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .skin-option {
+    width: 38px;
+    height: 38px;
   }
 }
 

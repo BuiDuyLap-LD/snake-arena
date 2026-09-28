@@ -43,12 +43,12 @@
 
       <div class="instructions-grid">
         <div class="instruction-item">
-          <span>🎯</span>
-          <span><strong>Chuột / Chạm:</strong> Đổi hướng</span>
+          <span>🕹️</span>
+          <span><strong>Joystick:</strong> Điều hướng rắn</span>
         </div>
         <div class="instruction-item">
           <span>⚡</span>
-          <span><strong>Space / Click:</strong> Tăng tốc</span>
+          <span><strong>Nút BOOST:</strong> Tăng tốc</span>
         </div>
         <div class="instruction-item">
           <span>🍎</span>
@@ -64,56 +64,71 @@
 
   <!-- ================= IN-GAME HUD ================= -->
   <div class="game-hud">
+
     <!-- Top Bar: Timer & Player Count -->
     <div class="top-bar hud-interactive">
       <div id="match-timer" class="match-timer">⏱️ 03:00</div>
       <div class="hud-divider"></div>
-      <div id="player-count" class="player-count-badge">👥 1 người chơi | 6 rắn</div>
+      <div id="player-count" class="player-count-badge">👥 1 người chơi</div>
     </div>
 
-    <!-- Kill Feed -->
+    <!-- Kill Feed (top-left, below top-bar on mobile) -->
     <div id="kill-feed" class="kill-feed"></div>
 
-    <!-- Leaderboard -->
-    <div class="leaderboard-panel hud-interactive">
-      <div class="leaderboard-title">
-        <span>🏆</span> Xếp Hạng Trận Đấu
+    <!-- Leaderboard (right side, collapsible on mobile) -->
+    <div class="leaderboard-panel hud-interactive" id="leaderboard-panel">
+      <div class="leaderboard-title" id="leaderboard-toggle">
+        <span>🏆</span> <span class="lb-title-text">Xếp Hạng</span>
+        <span class="lb-collapse-icon">▲</span>
       </div>
       <ul id="leaderboard-list" class="leaderboard-list">
         <!-- Rendered dynamically -->
       </ul>
     </div>
 
-    <!-- Bottom Left Stats -->
+    <!-- Bottom Stats Bar -->
     <div class="stats-panel hud-interactive">
       <div class="stat-box">
-        <span class="stat-label">Chiều dài</span>
+        <span class="stat-label">Dài</span>
         <span id="stat-length" class="stat-value">22</span>
       </div>
       <div class="hud-divider"></div>
       <div class="stat-box">
-        <span class="stat-label">Điểm số</span>
+        <span class="stat-label">Điểm</span>
         <span id="stat-score" class="stat-value score">0</span>
       </div>
       <div class="hud-divider"></div>
       <div class="stat-box">
-        <span class="stat-label">Hạ gục</span>
+        <span class="stat-label">Kill</span>
         <span id="stat-kills" class="stat-value kills">0</span>
       </div>
     </div>
 
-    <!-- Bottom Right Minimap -->
-    <div class="minimap-container hud-interactive">
+    <!-- Minimap (desktop only — hidden on mobile to save space) -->
+    <div class="minimap-container hud-interactive desktop-only">
       <canvas id="minimap-canvas"></canvas>
     </div>
 
     <!-- Audio Mute Button -->
     <button id="btn-mute" class="floating-btn hud-interactive" title="Bật/Tắt âm thanh">🔊</button>
 
-    <!-- Mobile Touch Boost Button -->
-    <div class="mobile-controls">
-      <div id="btn-touch-boost" class="boost-touch-btn">⚡ Tốc</div>
+    <!-- ===== MOBILE CONTROLS ===== -->
+    <div class="mobile-controls" id="mobile-controls">
+      <!-- Virtual Joystick (left side) -->
+      <div class="joystick-zone" id="joystick-zone">
+        <div class="joystick-base" id="joystick-base">
+          <div class="joystick-label">🕹️</div>
+          <div class="joystick-thumb" id="joystick-thumb"></div>
+        </div>
+      </div>
+
+      <!-- Boost Button (right side) -->
+      <div id="btn-touch-boost" class="boost-touch-btn hud-interactive">
+        <span class="boost-icon">⚡</span>
+        <span class="boost-label">BOOST</span>
+      </div>
     </div>
+
   </div>
 
   <!-- ================= MODAL: DEATH / RESPAWN ================= -->
@@ -146,19 +161,16 @@
       <p class="death-reason">Bảng vinh danh các dũng sĩ rắn mạnh nhất</p>
 
       <div class="podium-container">
-        <!-- 2nd Place -->
         <div id="podium-second" class="podium-step second">
           <div class="podium-avatar">🥈</div>
           <div class="podium-name">-</div>
           <div class="podium-score">-</div>
         </div>
-        <!-- 1st Place -->
         <div id="podium-first" class="podium-step first">
           <div class="podium-avatar">👑</div>
           <div class="podium-name">-</div>
           <div class="podium-score">-</div>
         </div>
-        <!-- 3rd Place -->
         <div id="podium-third" class="podium-step third">
           <div class="podium-avatar">🥉</div>
           <div class="podium-name">-</div>
