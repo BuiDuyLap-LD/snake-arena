@@ -13,6 +13,18 @@ class Snake {
     // Spawn protection: 3 seconds of invulnerability
     this.shieldTimer = 3.0;
 
+    // Power-up Inventory & Active Effects
+    this.inventory = {
+      nitro: 0,
+      vision: 0,
+      magnet: 0,
+    };
+    this.activeEffects = {
+      nitro: 0,
+      vision: 0,
+      magnet: 0,
+    };
+
     // Movement & Physics
     this.baseSpeed = 190;
     this.boostSpeed = 330;
@@ -55,11 +67,37 @@ class Snake {
   }
 
   setBoosting(boosting) {
-    if (this.body.length <= 12) {
+    if (this.body.length <= 12 && !this.activeEffects.nitro) {
       this.isBoosting = false;
       return;
     }
     this.isBoosting = boosting;
+  }
+
+  addPowerup(type) {
+    if (this.inventory[type] !== undefined) {
+      if (this.inventory[type] < 2) {
+        this.inventory[type]++;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  usePowerup(type) {
+    if (!this.alive) return false;
+    if (this.inventory[type] && this.inventory[type] > 0) {
+      this.inventory[type]--;
+      if (type === 'nitro') {
+        this.activeEffects.nitro = 5.0; // 5s hyper speed without length cost
+      } else if (type === 'vision') {
+        this.activeEffects.vision = 8.0; // 8s wide eagle-eye vision
+      } else if (type === 'magnet') {
+        this.activeEffects.magnet = 6.0; // 6s food magnet
+      }
+      return true;
+    }
+    return false;
   }
 
   update(dt, arenaRadius, foods, allSnakes) {
@@ -68,6 +106,18 @@ class Snake {
     // Decrement spawn protection shield
     if (this.shieldTimer > 0) {
       this.shieldTimer = Math.max(0, this.shieldTimer - dt);
+    }
+
+    // Decrement active effects
+    if (this.activeEffects.nitro > 0) {
+      this.activeEffects.nitro = Math.max(0, this.activeEffects.nitro - dt);
+    }
+    if (this.activeEffects.vision > 0) {
+      this.activeEffects.vision = Math.max(0, this.activeEffects.vision - dt);
+    }
+    if (this.activeEffects.magnet > 0) {
+      this.activeEffects.magnet = Math.max(0, this.activeEffects.magnet - dt);
+      this.applyMagnetEffect(dt, foods);
     }
 
     if (this.isBot) {
@@ -91,7 +141,11 @@ class Snake {
 
     // Speed handling & boosting penalty
     let droppedPellet = null;
-    if (this.isBoosting && this.body.length > 12) {
+
+    if (this.activeEffects.nitro > 0) {
+      // Hyper Nitro active: 2.2x speed, NO LENGTH LOSS, NO SCORE DROP!
+      this.speed = this.baseSpeed * 2.15;
+    } else if (this.isBoosting && this.body.length > 12) {
       this.speed = this.boostSpeed;
       this.boostDropCooldown += dt;
       if (this.boostDropCooldown >= 0.16) {
@@ -128,6 +182,27 @@ class Snake {
     this.radius = Math.min(26, this.baseRadius + Math.floor(this.body.length / 40));
 
     return droppedPellet;
+  }
+
+  applyMagnetEffect(dt, foods) {
+    const pullRadius = 420;
+    const pullRadiusSq = pullRadius * pullRadius;
+    const pullSpeed = 480 * dt;
+
+    for (let i = 0; i < foods.length; i++) {
+      const f = foods[i];
+      if (!f) continue;
+      const dx = this.head.x - f.x;
+      const dy = this.head.y - f.y;
+      const distSq = dx * dx + dy * dy;
+
+      if (distSq < pullRadiusSq && distSq > 4) {
+        const dist = Math.sqrt(distSq);
+        const factor = Math.min(1, pullSpeed / dist);
+        f.x += dx * factor * 1.5;
+        f.y += dy * factor * 1.5;
+      }
+    }
   }
 
   updateBodySegments() {
@@ -179,7 +254,7 @@ class Snake {
       return;
     }
 
-    // Avoid other snakes (increased detection radius so bots don't crowd or ram players)
+    // Avoid other snakes
     let immediateThreat = false;
     const lookAheadDist = 110;
     const futureHeadX = this.head.x + Math.cos(this.angle) * lookAheadDist;
@@ -188,7 +263,6 @@ class Snake {
     for (const other of allSnakes) {
       if (!other.alive || other.id === this.id) continue;
 
-      // Check distance to other snake segments
       for (let i = 0; i < other.body.length; i += 2) {
         const seg = other.body[i];
         const d = Math.hypot(futureHeadX - seg.x, futureHeadY - seg.y);
@@ -252,6 +326,12 @@ class Snake {
       shield: this.shieldTimer > 0,
       length: this.body.length,
       body: this.body.map(s => ({ x: Math.round(s.x), y: Math.round(s.y) })),
+      inventory: { ...this.inventory },
+      activeEffects: {
+        nitro: Number(this.activeEffects.nitro.toFixed(1)),
+        vision: Number(this.activeEffects.vision.toFixed(1)),
+        magnet: Number(this.activeEffects.magnet.toFixed(1)),
+      },
     };
   }
 }

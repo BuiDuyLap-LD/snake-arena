@@ -6,9 +6,12 @@ const { WebSocketServer } = require('ws');
 const path = require('path');
 const os = require('os');
 const GameRoom = require('./GameRoom');
+const leaderboardManager = require('./LeaderboardManager');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
 
 // Serve public directory
 const publicDir = path.join(__dirname, '..', 'public');
@@ -21,6 +24,14 @@ app.get('/api/status', (req, res) => {
     players: gameRoom.players.size,
     bots: gameRoom.bots.size,
     timeRemaining: Math.ceil(gameRoom.timeRemaining),
+  });
+});
+
+// Human Global Leaderboard endpoint
+app.get('/api/leaderboard', (req, res) => {
+  res.json({
+    success: true,
+    leaderboard: leaderboardManager.getTopPlayers(20),
   });
 });
 
@@ -37,6 +48,12 @@ wss.on('connection', (ws) => {
   const playerId = `p_${nextClientId++}`;
   let hasJoined = false;
 
+  // Send global leaderboard on initial connect
+  ws.send(JSON.stringify({
+    type: 'GLOBAL_LEADERBOARD',
+    leaderboard: leaderboardManager.getTopPlayers(20),
+  }));
+
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
@@ -48,8 +65,15 @@ wss.on('connection', (ws) => {
         hasJoined = true;
       } else if (data.type === 'PLAYER_INPUT' && hasJoined) {
         gameRoom.handlePlayerInput(playerId, data);
+      } else if (data.type === 'USE_POWERUP' && hasJoined) {
+        gameRoom.handlePlayerInput(playerId, data);
       } else if (data.type === 'RESPAWN' && hasJoined) {
         gameRoom.respawnPlayer(playerId);
+      } else if (data.type === 'GET_GLOBAL_LEADERBOARD') {
+        ws.send(JSON.stringify({
+          type: 'GLOBAL_LEADERBOARD',
+          leaderboard: leaderboardManager.getTopPlayers(20),
+        }));
       } else if (data.type === 'PING') {
         ws.send(JSON.stringify({ type: 'PONG', time: data.time }));
       }
@@ -81,7 +105,6 @@ function getLocalIp() {
       }
     }
   }
-  // Prefer real Wi-Fi or Ethernet adapter
   const best = candidates.find(c => c.isWifiOrEth && !c.isVirtual) ||
                candidates.find(c => !c.isVirtual) ||
                candidates[0];

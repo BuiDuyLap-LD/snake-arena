@@ -44,7 +44,6 @@ class GameRenderer {
       let interp = this.interpolatedSnakes.get(s.id);
 
       if (!interp) {
-        // First time seeing this snake
         interp = {
           id: s.id,
           name: s.name,
@@ -62,6 +61,8 @@ class GameRenderer {
           shield: s.shield,
           length: s.length,
           body: s.body.map(pt => ({ x: pt.x, y: pt.y })),
+          activeEffects: s.activeEffects || { nitro: 0, vision: 0, magnet: 0 },
+          inventory: s.inventory || { nitro: 0, vision: 0, magnet: 0 },
         };
         this.interpolatedSnakes.set(s.id, interp);
       } else {
@@ -72,8 +73,9 @@ class GameRenderer {
         interp.isBoosting = s.isBoosting;
         interp.shield = s.shield;
         interp.length = s.length;
+        interp.activeEffects = s.activeEffects || { nitro: 0, vision: 0, magnet: 0 };
+        interp.inventory = s.inventory || { nitro: 0, vision: 0, magnet: 0 };
 
-        // Teleport threshold: if snake respawned or jumped, snap immediately without lerping across the screen
         const distFromCurrent = Math.hypot(s.head.x - interp.head.x, s.head.y - interp.head.y);
         if (distFromCurrent > 180) {
           interp.head.x = s.head.x;
@@ -88,7 +90,6 @@ class GameRenderer {
           interp.targetHead.y = s.head.y;
           interp.targetAngle = s.angle;
 
-          // If body count changed significantly or length mismatch, sync segments
           if (Math.abs(interp.body.length - s.body.length) > 3) {
             interp.body = s.body.map(pt => ({ x: pt.x, y: pt.y }));
           }
@@ -96,7 +97,6 @@ class GameRenderer {
       }
     }
 
-    // Clean up dead/disconnected snakes
     for (const id of this.interpolatedSnakes.keys()) {
       if (!currentIds.has(id)) {
         this.interpolatedSnakes.delete(id);
@@ -111,8 +111,9 @@ class GameRenderer {
     for (const [id, snake] of this.interpolatedSnakes.entries()) {
       if (!snake.alive) continue;
 
+      const isNitro = snake.activeEffects && snake.activeEffects.nitro > 0;
+
       if (id === localPlayerId && currentInput) {
-        // CLIENT PREDICTION FOR LOCAL PLAYER: Zero-latency steering!
         let diff = currentInput.angle - snake.angle;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
@@ -125,66 +126,70 @@ class GameRenderer {
         }
         snake.angle = (snake.angle + Math.PI * 2) % (Math.PI * 2);
 
-        // Advance head predicted position
-        const speed = currentInput.boosting ? 330 : 190;
+        let speed = 190;
+        if (isNitro) speed = 405;
+        else if (currentInput.boosting) speed = 330;
+
         snake.head.x += Math.cos(snake.angle) * speed * dt;
         snake.head.y += Math.sin(snake.angle) * speed * dt;
 
-        // Soft reconciliation towards authoritative server position
         if (snake.targetHead) {
           snake.head.x += (snake.targetHead.x - snake.head.x) * 0.12;
           snake.head.y += (snake.targetHead.y - snake.head.y) * 0.12;
         }
 
-        snake.isBoosting = currentInput.boosting;
+        snake.isBoosting = isNitro || currentInput.boosting;
       } else {
-        // ENTITY INTERPOLATION FOR OTHER SNAKES: Smooth 60fps gliding
-        const lerpFactor = Math.min(1.0, dt * 24);
-        snake.head.x += (snake.targetHead.x - snake.head.x) * lerpFactor;
-        snake.head.y += (snake.targetHead.y - snake.head.y) * lerpFactor;
-
-        // Angle lerp
-        let diff = snake.targetAngle - snake.angle;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        snake.angle += diff * Math.min(1.0, dt * 18);
-        snake.angle = (snake.angle + Math.PI * 2) % (Math.PI * 2);
-      }
-
-      // Smooth segment following
-      let prevX = snake.head.x;
-      let prevY = snake.head.y;
-      for (let i = 0; i < snake.body.length; i++) {
-        const seg = snake.body[i];
-        const dx = seg.x - prevX;
-        const dy = seg.y - prevY;
-        const dist = Math.hypot(dx, dy);
-
-        if (dist > segmentDist) {
-          const factor = segmentDist / dist;
-          seg.x = prevX + dx * factor;
-          seg.y = prevY + dy * factor;
+        if (snake.targetHead) {
+          snake.head.x += (snake.targetHead.x - snake.head.x) * 0.22;
+          snake.head.y += (snake.targetHead.y - snake.head.y) * 0.22;
         }
-        prevX = seg.x;
-        prevY = seg.y;
-      }
-    }
-  }
 
-  addExplosion(x, y, color) {
-    for (let i = 0; i < 20; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 180 + 40;
-      this.particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        color: color || '#ff3366',
-        radius: Math.random() * 5 + 3,
-        alpha: 1,
-        life: 0.6,
-      });
+        if (typeof snake.targetAngle === 'number') {
+          let diff = snake.targetAngle - snake.angle;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          snake.angle += diff * 0.22;
+          snake.angle = (snake.angle + Math.PI * 2) % (Math.PI * 2);
+        }
+      }
+
+      // Smooth segment trailing
+      const body = snake.body;
+      if (body && body.length > 0) {
+        let prevX = snake.head.x;
+        let prevY = snake.head.y;
+
+        for (let i = 0; i < body.length; i++) {
+          const seg = body[i];
+          const dx = seg.x - prevX;
+          const dy = seg.y - prevY;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist > segmentDist) {
+            const factor = segmentDist / dist;
+            seg.x = prevX + dx * factor;
+            seg.y = prevY + dy * factor;
+          }
+          prevX = seg.x;
+          prevY = seg.y;
+        }
+      }
+
+      // Particle spawn for nitro/boost
+      if (snake.isBoosting && Math.random() < 0.45 && body && body.length > 0) {
+        const tail = body[body.length - 1];
+        this.particles.push({
+          x: tail.x + (Math.random() - 0.5) * 8,
+          y: tail.y + (Math.random() - 0.5) * 8,
+          vx: -Math.cos(snake.angle) * (60 + Math.random() * 80),
+          vy: -Math.sin(snake.angle) * (60 + Math.random() * 80),
+          radius: Math.random() * 4 + 2,
+          color: isNitro ? '#ff9900' : snake.color,
+          alpha: 0.85,
+          life: 0.35,
+        });
+      }
     }
   }
 
@@ -201,8 +206,7 @@ class GameRenderer {
     }
   }
 
-  render(foodsMap, localPlayerId, arenaRadius = 2200, dt = 0.016, currentInput = null) {
-    // 1. Advance interpolation & physics
+  render(foodsMap, localPlayerId, arenaRadius = 2200, dt = 0.016, currentInput = null, powerupsList = []) {
     this.updateInterpolation(dt, localPlayerId, currentInput);
     this.updateParticles(dt);
 
@@ -220,8 +224,12 @@ class GameRenderer {
       this.camX += (localSnake.head.x - this.camX) * 0.2;
       this.camY += (localSnake.head.y - this.camY) * 0.2;
 
-      const targetZoom = Math.max(0.72, 1.0 - (localSnake.length / 500) * 0.28);
-      this.zoom += (targetZoom - this.zoom) * 0.05;
+      const isVision = localSnake.activeEffects && localSnake.activeEffects.vision > 0;
+      let targetZoom = Math.max(0.72, 1.0 - (localSnake.length / 500) * 0.28);
+      if (isVision) {
+        targetZoom *= 0.62; // 1.7x wide zoom out
+      }
+      this.zoom += (targetZoom - this.zoom) * 0.06;
     }
 
     ctx.save();
@@ -229,15 +237,20 @@ class GameRenderer {
     ctx.scale(this.zoom, this.zoom);
     ctx.translate(-this.camX, -this.camY);
 
-    // 2. Draw Background Grid
+    // 1. Draw Background Grid
     this.drawGrid(ctx, width, height);
 
-    // 3. Draw Arena Boundary Forcefield
+    // 2. Draw Arena Boundary Forcefield
     this.drawArenaBoundary(ctx, arenaRadius);
 
-    // 4. Draw Foods
+    // 3. Draw Foods
     if (foodsMap && foodsMap.size > 0) {
       this.drawFoods(ctx, foodsMap);
+    }
+
+    // 4. Draw Powerup Orbs on Arena
+    if (powerupsList && powerupsList.length > 0) {
+      this.drawPowerups(ctx, powerupsList);
     }
 
     // 5. Draw Snakes (other snakes first, local snake on top)
@@ -260,7 +273,7 @@ class GameRenderer {
     ctx.restore();
 
     // 7. Draw Minimap
-    this.drawMinimap(snakesList, localPlayerId, arenaRadius, dt);
+    this.drawMinimap(snakesList, localPlayerId, arenaRadius, dt, powerupsList);
   }
 
   drawGrid(ctx, viewW, viewH) {
@@ -287,7 +300,6 @@ class GameRenderer {
     }
     ctx.stroke();
 
-    // Subtle intersection dots
     ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
     for (let x = startX; x <= endX; x += gridSize * 2) {
       for (let y = startY; y <= endY; y += gridSize * 2) {
@@ -306,7 +318,7 @@ class GameRenderer {
     ctx.fillStyle = 'rgba(4, 6, 12, 0.85)';
     ctx.fill();
 
-    // Fast layered forcefield glow (avoiding expensive shadowBlur)
+    // Forcefield glow
     ctx.beginPath();
     ctx.arc(0, 0, radius + 4, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(255, 51, 102, 0.25)';
@@ -319,10 +331,9 @@ class GameRenderer {
     ctx.lineWidth = 8;
     ctx.stroke();
 
-    // Inner bright energy rim
     ctx.beginPath();
     ctx.arc(0, 0, radius - 2, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -330,22 +341,19 @@ class GameRenderer {
   }
 
   drawFoods(ctx, foodsMap) {
-    const time = Date.now() * 0.003;
-    const halfW = (this.canvas.width / 2) / this.zoom + 50;
-    const halfH = (this.canvas.height / 2) / this.zoom + 50;
+    const halfW = (this.canvas.width / 2) / this.zoom + 80;
+    const halfH = (this.canvas.height / 2) / this.zoom + 80;
+    const minX = this.camX - halfW;
+    const maxX = this.camX + halfW;
+    const minY = this.camY - halfH;
+    const maxY = this.camY + halfH;
 
     for (const f of foodsMap.values()) {
-      // Viewport culling
-      const dx = f.x - this.camX;
-      const dy = f.y - this.camY;
-      if (Math.abs(dx) > halfW || Math.abs(dy) > halfH) {
-        continue;
-      }
+      if (f.x < minX || f.x > maxX || f.y < minY || f.y > maxY) continue;
 
-      const pulse = 1 + Math.sin(time + f.id) * 0.12;
-      const r = f.r * pulse;
+      const r = f.r || 4;
 
-      // Outer glow circle
+      // Outer glow
       ctx.beginPath();
       ctx.arc(f.x, f.y, r * 1.6, 0, Math.PI * 2);
       ctx.fillStyle = f.c;
@@ -370,11 +378,80 @@ class GameRenderer {
     }
   }
 
+  drawPowerups(ctx, powerupsList) {
+    const time = Date.now() * 0.003;
+    const halfW = (this.canvas.width / 2) / this.zoom + 120;
+    const halfH = (this.canvas.height / 2) / this.zoom + 120;
+    const minX = this.camX - halfW;
+    const maxX = this.camX + halfW;
+    const minY = this.camY - halfH;
+    const maxY = this.camY + halfH;
+
+    for (const p of powerupsList) {
+      if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+
+      let color = '#ffbe0b';
+      let icon = '⚡';
+      if (p.type === 'vision') {
+        color = '#bd00ff';
+        icon = '👁️';
+      } else if (p.type === 'magnet') {
+        color = '#00f0ff';
+        icon = '🧲';
+      }
+
+      const pulse = Math.sin(time * 3 + p.id) * 3;
+      const radius = 18 + pulse;
+
+      // Outer glow
+      ctx.beginPath();
+      ctx.arc(0, 0, radius + 8, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.25;
+      ctx.fill();
+
+      // Rotating dashed ring
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([7, 5]);
+      ctx.lineDashOffset = -time * 20;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius + 2, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Glowing sphere body
+      const grad = ctx.createRadialGradient(-4, -4, 2, 0, 0, radius);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.5, color);
+      grad.addColorStop(1, '#0a0f1d');
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = 0.95;
+      ctx.fill();
+
+      // Icon
+      ctx.globalAlpha = 1.0;
+      ctx.font = '15px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(icon, 0, 1);
+
+      ctx.restore();
+    }
+  }
+
   drawSnake(ctx, snake, isLocal) {
     const body = snake.body;
     if (!body || body.length === 0) return;
 
     const baseRadius = snake.radius || 14;
+    const isNitro = snake.activeEffects && snake.activeEffects.nitro > 0;
+    const isMagnet = snake.activeEffects && snake.activeEffects.magnet > 0;
+    const isVision = snake.activeEffects && snake.activeEffects.vision > 0;
 
     // 1. Draw Body Segments (from tail to neck)
     for (let i = body.length - 1; i >= 0; i--) {
@@ -385,21 +462,24 @@ class GameRenderer {
       ctx.beginPath();
       ctx.arc(seg.x, seg.y, segRadius, 0, Math.PI * 2);
 
-      // Alternate color pattern for cyber stripe look
-      ctx.fillStyle = i % 2 === 0 ? snake.color : '#111827';
+      if (isNitro) {
+        ctx.fillStyle = i % 2 === 0 ? '#ffbe0b' : '#ff0055';
+      } else {
+        ctx.fillStyle = i % 2 === 0 ? snake.color : '#111827';
+      }
       ctx.fill();
 
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = snake.color;
+      ctx.strokeStyle = isNitro ? '#ffd700' : snake.color;
       ctx.stroke();
     }
 
-    // 2. Draw Boosting Flame
-    if (snake.isBoosting && body.length > 0) {
+    // 2. Draw Boosting Flame / Nitro Aura
+    if ((snake.isBoosting || isNitro) && body.length > 0) {
       const tail = body[body.length - 1];
       ctx.beginPath();
-      ctx.arc(tail.x + (Math.random() - 0.5) * 6, tail.y + (Math.random() - 0.5) * 6, baseRadius * 0.9, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 170, 0, 0.8)';
+      ctx.arc(tail.x + (Math.random() - 0.5) * 6, tail.y + (Math.random() - 0.5) * 6, baseRadius * (isNitro ? 1.4 : 0.9), 0, Math.PI * 2);
+      ctx.fillStyle = isNitro ? 'rgba(255, 190, 11, 0.95)' : 'rgba(255, 170, 0, 0.8)';
       ctx.fill();
     }
 
@@ -409,12 +489,11 @@ class GameRenderer {
     ctx.translate(head.x, head.y);
     ctx.rotate(snake.angle);
 
-    // Fast outer glow halo for local player
     if (isLocal) {
       ctx.beginPath();
       ctx.arc(0, 0, baseRadius + 7, 0, Math.PI * 2);
-      ctx.fillStyle = snake.color;
-      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = isNitro ? '#ffbe0b' : snake.color;
+      ctx.globalAlpha = 0.32;
       ctx.fill();
       ctx.globalAlpha = 1.0;
     }
@@ -422,16 +501,15 @@ class GameRenderer {
     // Head base circle
     ctx.beginPath();
     ctx.arc(0, 0, baseRadius + 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = snake.color;
+    ctx.fillStyle = isNitro ? '#ff9900' : snake.color;
     ctx.fill();
 
-    // Cute animated eyes
+    // Eyes
     const eyeOffsetX = baseRadius * 0.45;
     const eyeOffsetY = baseRadius * 0.6;
     const eyeRadius = baseRadius * 0.38;
     const pupilRadius = eyeRadius * 0.55;
 
-    // Sclera
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(eyeOffsetX, -eyeOffsetY, eyeRadius, 0, Math.PI * 2);
@@ -441,7 +519,6 @@ class GameRenderer {
     ctx.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Pupils looking forward
     ctx.fillStyle = '#05070d';
     ctx.beginPath();
     ctx.arc(eyeOffsetX + 2, -eyeOffsetY, pupilRadius, 0, Math.PI * 2);
@@ -453,56 +530,79 @@ class GameRenderer {
 
     ctx.restore();
 
-    // 4. Draw Spawn Protection Energy Shield
+    // 4. Draw Magnet Magnetic Wave Aura
+    if (isMagnet) {
+      const time = Date.now() * 0.008;
+      for (let ring = 1; ring <= 3; ring++) {
+        const ringRad = ((time * 30 + ring * 25) % 80) + baseRadius;
+        const ringAlpha = Math.max(0, 1 - (ringRad - baseRadius) / 80);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, ringRad, 0, Math.PI * 2);
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = ringAlpha * 0.7;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 5. Draw Vision Psychic Ring
+    if (isVision) {
+      const time = Date.now() * 0.004;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(head.x, head.y, baseRadius + 16, 0, Math.PI * 2);
+      ctx.strokeStyle = '#bd00ff';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([5, 5]);
+      ctx.lineDashOffset = time * 25;
+      ctx.globalAlpha = 0.8;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 6. Draw Spawn Protection Energy Shield
     if (snake.shield) {
       const time = Date.now() * 0.005;
       const pulse = Math.sin(time * 4) * 3;
       const shieldRadius = baseRadius + 14 + pulse;
 
       ctx.save();
-      // Outer glowing bubble
       ctx.beginPath();
       ctx.arc(head.x, head.y, shieldRadius, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
       ctx.fill();
 
-      // Rotating dashed energy ring
       ctx.strokeStyle = '#00f0ff';
       ctx.lineWidth = 2.5;
       ctx.setLineDash([8, 6]);
       ctx.lineDashOffset = -time * 20;
       ctx.stroke();
 
-      // Inner bright rim
       ctx.beginPath();
       ctx.arc(head.x, head.y, shieldRadius - 3, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.lineWidth = 1;
-      ctx.setLineDash([]);
       ctx.stroke();
-
-      // Shield aura along body segments
-      for (let i = 0; i < body.length; i += 3) {
-        const seg = body[i];
-        ctx.beginPath();
-        ctx.arc(seg.x, seg.y, baseRadius + 5, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
-        ctx.fill();
-      }
       ctx.restore();
     }
 
-    // 5. Floating Nickname & Shield Tag above head
+    // 7. Draw Name Tag & Active Skill Badges
     ctx.save();
-    ctx.font = 'bold 12px Outfit, sans-serif';
+    ctx.font = 'bold 12px "Outfit", sans-serif';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
 
     const tagY = head.y - baseRadius - (snake.shield ? 18 : 12);
-    const shieldLabel = snake.shield ? '🛡️ [BẢO VỆ] ' : '';
-    const nameText = `${shieldLabel}${snake.name} (${Math.round(snake.score)})`;
+    let badges = '';
+    if (snake.shield) badges += '🛡️';
+    if (isNitro) badges += '⚡';
+    if (isMagnet) badges += '🧲';
+    if (isVision) badges += '👁️';
 
-    // Background pill
+    const prefix = badges ? `${badges} ` : '';
+    const nameText = `${prefix}${snake.name} (${Math.round(snake.score)})`;
+
     ctx.fillStyle = snake.shield ? 'rgba(0, 40, 70, 0.85)' : 'rgba(10, 15, 29, 0.75)';
     const textWidth = ctx.measureText(nameText).width;
     ctx.fillRect(head.x - textWidth / 2 - 6, tagY - 14, textWidth + 12, 18);
@@ -513,7 +613,7 @@ class GameRenderer {
       ctx.strokeRect(head.x - textWidth / 2 - 6, tagY - 14, textWidth + 12, 18);
     }
 
-    ctx.fillStyle = snake.shield ? '#00f0ff' : (isLocal ? '#00f0ff' : '#ffffff');
+    ctx.fillStyle = isNitro ? '#ffd700' : (snake.shield ? '#00f0ff' : (isLocal ? '#00f0ff' : '#ffffff'));
     ctx.fillText(nameText, head.x, tagY + 2);
     ctx.restore();
   }
@@ -530,7 +630,7 @@ class GameRenderer {
     }
   }
 
-  drawMinimap(snakesList, localPlayerId, arenaRadius, dt) {
+  drawMinimap(snakesList, localPlayerId, arenaRadius, dt, powerupsList = []) {
     if (!this.minimapCtx) return;
     const mctx = this.minimapCtx;
     const w = this.minimapCanvas.width;
@@ -566,6 +666,16 @@ class GameRenderer {
     mctx.stroke();
 
     const scale = mapRadius / arenaRadius;
+
+    // Draw powerups on minimap
+    for (const p of powerupsList) {
+      const px = cx + p.x * scale;
+      const py = cy + p.y * scale;
+      mctx.beginPath();
+      mctx.arc(px, py, 2.2, 0, Math.PI * 2);
+      mctx.fillStyle = p.type === 'nitro' ? '#ffbe0b' : (p.type === 'vision' ? '#bd00ff' : '#00f0ff');
+      mctx.fill();
+    }
 
     // Draw snake dots
     for (const s of snakesList) {

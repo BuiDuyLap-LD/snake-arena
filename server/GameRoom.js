@@ -2,12 +2,15 @@
 
 const Snake = require('./Snake');
 const FoodManager = require('./FoodManager');
+const PowerupManager = require('./PowerupManager');
+const leaderboardManager = require('./LeaderboardManager');
 
 class GameRoom {
-  constructor(roomId = 'arena-main', io = null) {
+  constructor(roomId = 'arena-main') {
     this.roomId = roomId;
     this.arenaRadius = 2200;
     this.foodManager = new FoodManager(this.arenaRadius, 500);
+    this.powerupManager = new PowerupManager(this.arenaRadius, 14);
 
     this.players = new Map(); // ws/id -> { ws, snake }
     this.bots = new Map();    // botId -> snake
@@ -55,7 +58,6 @@ class GameRoom {
     let bestDist = -1;
     const maxRadius = this.arenaRadius - 400;
 
-    // Try multiple candidate spawn positions
     const candidateCount = 20;
     for (let c = 0; c < candidateCount; c++) {
       const r = Math.sqrt(Math.random()) * maxRadius;
@@ -63,22 +65,18 @@ class GameRoom {
       const candX = Math.cos(theta) * r;
       const candY = Math.sin(theta) * r;
 
-      // Find distance to closest snake (head or segments)
       let minClearance = 99999;
       for (const s of existingSnakes) {
         if (!s.alive) continue;
-        // Check head
         const dh = Math.hypot(candX - s.head.x, candY - s.head.y);
         if (dh < minClearance) minClearance = dh;
 
-        // Check body samples
         for (let i = 0; i < s.body.length; i += 3) {
           const ds = Math.hypot(candX - s.body[i].x, candY - s.body[i].y);
           if (ds < minClearance) minClearance = ds;
         }
       }
 
-      // If clearance is over 550px, this position is very safe
       if (minClearance > 550) {
         bestPos = { x: Math.round(candX), y: Math.round(candY) };
         bestDist = minClearance;
@@ -91,9 +89,7 @@ class GameRoom {
       }
     }
 
-    // Orient initial angle towards center
     const initialAngle = Math.atan2(-bestPos.y, -bestPos.x) + (Math.random() - 0.5) * 0.5;
-
     return { pos: bestPos, angle: initialAngle };
   }
 
@@ -136,15 +132,17 @@ class GameRoom {
       roundDuration: this.roundDuration,
       timeRemaining: Math.ceil(this.timeRemaining),
       foods: this.foodManager.getAllFoods(),
+      powerups: this.powerupManager.getAllPowerups(),
     });
 
-    console.log(`[GameRoom] Player joined: ${playerName} (${playerId}) at safe pos (${pos.x}, ${pos.y}). Total: ${this.players.size}`);
+    console.log(`[GameRoom] Player joined: ${playerName} (${playerId}) at (${pos.x}, ${pos.y}). Total: ${this.players.size}`);
   }
 
   removePlayer(playerId) {
     const player = this.players.get(playerId);
     if (player) {
-      if (player.snake.alive) {
+      if (player.snake && player.snake.alive) {
+        leaderboardManager.recordPlayerScore(player.snake.name, player.snake.score, player.snake.kills);
         this.foodManager.spawnDeadSnakeFood(player.snake.body, player.snake.color);
       }
       this.players.delete(playerId);
@@ -163,15 +161,29 @@ class GameRoom {
     if (typeof inputData.boosting === 'boolean') {
       player.snake.setBoosting(inputData.boosting);
     }
+    if (inputData.type === 'USE_POWERUP' && typeof inputData.powerup === 'string') {
+      const success = player.snake.usePowerup(inputData.powerup);
+      if (success) {
+        this.sendTo(player.ws, {
+          type: 'POWERUP_ACTIVATED',
+          powerup: inputData.powerup,
+        });
+      }
+    }
   }
 
   respawnPlayer(playerId) {
     const player = this.players.get(playerId);
     if (!player) return;
 
+    // Record previous life score before respawning
+    if (player.snake) {
+      leaderboardManager.recordPlayerScore(player.snake.name, player.snake.score, player.snake.kills);
+    }
+
     const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
     player.snake = new Snake(playerId, player.snake.name, player.snake.color, false, pos, angle);
-    console.log(`[GameRoom] Player respawned at safe pos (${pos.x}, ${pos.y}) with 3s shield.`);
+    console.log(`[GameRoom] Player respawned at (${pos.x}, ${pos.y}) with 3s shield.`);
   }
 
   tick() {
@@ -205,6 +217,21 @@ class GameRoom {
       this.foodManager.checkHeadCollisions(snake);
     }
 
+    // Check Powerup Collections
+    const collected = this.powerupManager.checkHeadCollisions(allSnakes);
+    for (const c of collected) {
+      if (!c.isBot) {
+        const p = this.players.get(c.snakeId);
+        if (p && p.ws) {
+          this.sendTo(p.ws, {
+            type: 'POWERUP_COLLECTED',
+            powerup: c.type,
+            added: c.added,
+          });
+        }
+      }
+    }
+
     // Check Collisions with Shield Protection
     this.checkCollisions(allSnakes);
 
@@ -220,14 +247,13 @@ class GameRoom {
       const s1 = snakes[i];
       if (!s1.alive) continue;
 
-      // 1. Boundary check (immune if protected by shield)
+      // 1. Boundary check
       const distFromCenter = Math.hypot(s1.head.x, s1.head.y);
       if (distFromCenter >= this.arenaRadius - s1.radius) {
         if (!s1.isShielded()) {
           this.eliminateSnake(s1, null, 'va vào hàng rào năng lượng');
           continue;
         } else {
-          // Gently deflect back towards center if shielded
           s1.head.x *= 0.98;
           s1.head.y *= 0.98;
         }
@@ -239,7 +265,6 @@ class GameRoom {
         if (!s2.alive) continue;
 
         if (s1.id !== s2.id) {
-          // If EITHER snake is protected by spawn shield, ignore lethal collision!
           if (s1.isShielded() || s2.isShielded()) {
             continue;
           }
@@ -280,6 +305,14 @@ class GameRoom {
     if (!victim.alive) return;
     victim.alive = false;
 
+    // Record human stats to persistent global leaderboard
+    if (!victim.isBot) {
+      leaderboardManager.recordPlayerScore(victim.name, victim.score, victim.kills);
+    }
+    if (killer && !killer.isBot) {
+      leaderboardManager.recordPlayerScore(killer.name, killer.score, killer.kills);
+    }
+
     this.foodManager.spawnDeadSnakeFood(victim.body, victim.color);
 
     if (victim.isBot) {
@@ -310,6 +343,13 @@ class GameRoom {
     const allSnakes = this.getAllSnakes();
     allSnakes.sort((a, b) => b.score - a.score);
 
+    // Record stats for all human players
+    for (const s of allSnakes) {
+      if (!s.isBot) {
+        leaderboardManager.recordPlayerScore(s.name, s.score, s.kills);
+      }
+    }
+
     const rankings = allSnakes.map((s, index) => ({
       rank: index + 1,
       id: s.id,
@@ -332,6 +372,7 @@ class GameRoom {
     this.isIntermission = false;
     this.timeRemaining = this.roundDuration;
     this.foodManager = new FoodManager(this.arenaRadius, 500);
+    this.powerupManager = new PowerupManager(this.arenaRadius, 14);
 
     const allSnakes = [];
     for (const [id, player] of this.players.entries()) {
@@ -346,6 +387,7 @@ class GameRoom {
       type: 'MATCH_STARTED',
       roundDuration: this.roundDuration,
       foods: this.foodManager.getAllFoods(),
+      powerups: this.powerupManager.getAllPowerups(),
     });
     console.log(`[GameRoom] New match round started!`);
   }
@@ -373,6 +415,7 @@ class GameRoom {
       snakes: snakesData,
       foodAdded: foodDelta.added,
       foodEaten: foodDelta.eaten,
+      powerups: this.powerupManager.getAllPowerups(),
     };
 
     this.broadcast(snapshot);

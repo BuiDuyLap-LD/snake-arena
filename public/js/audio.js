@@ -29,7 +29,6 @@ class SoundEngine {
     this.init();
     if (!this.ctx) return;
 
-    // Rate limit eat sounds to prevent audio clipping
     const now = Date.now();
     if (now - this.lastEatTime < 45) return;
     this.lastEatTime = now;
@@ -113,14 +112,108 @@ class SoundEngine {
       osc.frequency.setValueAtTime(freq, t + idx * 0.1);
 
       gain.gain.setValueAtTime(0.15, t + idx * 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.1 + 0.6);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.1 + 0.4);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start(t + idx * 0.1);
-      osc.stop(t + idx * 0.1 + 0.6);
+      osc.stop(t + idx * 0.1 + 0.4);
     });
+  }
+
+  playPowerupPickup() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(587.33, t); // D5
+    osc.frequency.exponentialRampToValueAtTime(1174.66, t + 0.18); // D6
+
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.2);
+  }
+
+  playSkillNitro() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(720, t + 0.35);
+
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.38);
+  }
+
+  playSkillVision() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, t);
+    osc.frequency.exponentialRampToValueAtTime(440, t + 0.25);
+    osc.frequency.exponentialRampToValueAtTime(1320, t + 0.45);
+
+    gain.gain.setValueAtTime(0.16, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.48);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.48);
+  }
+
+  playSkillMagnet() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.linearRampToValueAtTime(640, t + 0.15);
+    osc.frequency.linearRampToValueAtTime(320, t + 0.3);
+
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.35);
   }
 }
 

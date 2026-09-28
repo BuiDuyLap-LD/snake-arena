@@ -47,11 +47,19 @@ class InputManager {
       }
     });
 
-    // Keyboard (Space to boost, Arrow keys / WASD option)
+    // Keyboard (Space to boost, Arrow keys / WASD option, 1/2/3 for skills)
     window.addEventListener('keydown', (e) => {
+      if (e.target && e.target.tagName === 'INPUT') return;
+
       if (e.code === 'Space') {
         this.boosting = true;
         this.notifyChange();
+      } else if (e.code === 'Digit1' || e.code === 'Numpad1') {
+        if (this.onUseSkill) this.onUseSkill('nitro');
+      } else if (e.code === 'Digit2' || e.code === 'Numpad2') {
+        if (this.onUseSkill) this.onUseSkill('vision');
+      } else if (e.code === 'Digit3' || e.code === 'Numpad3') {
+        if (this.onUseSkill) this.onUseSkill('magnet');
       }
     });
 

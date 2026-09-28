@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Multiplayer Snake Arena - Đấu Trường Rắn Săn Mồi 2D</title>
-  <meta name="description" content="Game rắn săn mồi 2D nhiều người chơi thời gian thực với đồ họa neon cyberpunk cực đỉnh!">
+  <title>Multiplayer Snake Arena 5v5 - Đấu Trường Rắn Săn Mồi Cực Đỉnh</title>
+  <meta name="description" content="Game rắn săn mồi 2D nhiều người chơi trực tuyến với hệ thống kỹ năng cường hóa, bảng rank toàn cầu và mời bạn bè cùng chiến!">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
 </head>
@@ -13,72 +13,177 @@
   <!-- Main Game Canvas -->
   <canvas id="game-canvas"></canvas>
 
-  <!-- ================= LOBBY / JOIN OVERLAY ================= -->
+  <!-- ================= LOBBY / MAIN MENU ================= -->
   <div id="screen-lobby" class="overlay-screen">
-    <div class="lobby-card">
-      <div class="logo-badge">
-        <span class="logo-icon">🐍</span>
-      </div>
-      <h1 class="title">SNAKE ARENA</h1>
-      <p class="subtitle">Đấu trường sinh tồn nhiều người chơi trực tuyến</p>
+    <div class="lobby-wrapper">
+      
+      <!-- Lobby Header -->
+      <header class="lobby-header">
+        <div class="lobby-brand">
+          <span class="logo-emoji">🐍</span>
+          <div class="brand-text">
+            <h1 class="brand-title">SNAKE ARENA <span>5V5</span></h1>
+            <p class="brand-subtitle">Đấu Trường Rắn Săn Mồi Trực Tuyến Thời Gian Thực</p>
+          </div>
+        </div>
+        <div class="lobby-header-actions">
+          <div class="online-indicator">
+            <span class="online-dot"></span>
+            <span id="lobby-online-count">Trực tuyến: 1 người chơi</span>
+          </div>
+          <button id="btn-lobby-sound" class="btn-icon-pill" title="Âm thanh">🔊</button>
+        </div>
+      </header>
 
-      <div class="input-group">
-        <label for="player-name" class="input-label">Tên người chơi</label>
-        <input type="text" id="player-name" class="text-input" placeholder="Nhập biệt danh của bạn..." maxlength="16" value="Viper Master" autofocus>
+      <!-- Lobby Main Grid -->
+      <div class="lobby-grid">
+        
+        <!-- Left Panel: Player Setup & Party / Room -->
+        <div class="lobby-card card-station">
+          <div class="card-header">
+            <h2>⚔️ Chiến Binh & Phòng Đấu</h2>
+          </div>
+
+          <!-- Snake Live Preview -->
+          <div class="snake-preview-box">
+            <div id="snake-avatar-preview" class="snake-avatar-head">
+              <div class="avatar-eye left"><div class="avatar-pupil"></div></div>
+              <div class="avatar-eye right"><div class="avatar-pupil"></div></div>
+            </div>
+            <div class="player-rank-pill" id="my-tier-badge">🥉 Hạng: Đồng</div>
+          </div>
+
+          <!-- Name Input -->
+          <div class="input-group">
+            <label for="player-name" class="input-label">Biệt danh chiến đấu</label>
+            <input type="text" id="player-name" class="text-input" placeholder="Nhập tên của bạn..." maxlength="16" value="Viper Master" autofocus>
+          </div>
+
+          <!-- Skin Selection -->
+          <div class="input-group">
+            <label class="input-label">Màu sắc chiến binh</label>
+            <div class="skin-selector">
+              <div class="skin-option active" data-color="#00f0ff" style="background: radial-gradient(circle, #00f0ff, #007799);" title="Electric Cyan"></div>
+              <div class="skin-option" data-color="#ff007f" style="background: radial-gradient(circle, #ff007f, #880044);" title="Neon Magenta"></div>
+              <div class="skin-option" data-color="#00ff88" style="background: radial-gradient(circle, #00ff88, #007733);" title="Toxic Emerald"></div>
+              <div class="skin-option" data-color="#ffbe0b" style="background: radial-gradient(circle, #ffbe0b, #996600);" title="Golden Solar"></div>
+              <div class="skin-option" data-color="#9d4edd" style="background: radial-gradient(circle, #9d4edd, #4a154b);" title="Cyber Violet"></div>
+              <div class="skin-option" data-color="#ff3b30" style="background: radial-gradient(circle, #ff3b30, #7a0000);" title="Crimson Blaze"></div>
+            </div>
+          </div>
+
+          <!-- Invite Friends Box -->
+          <div class="invite-box">
+            <div class="invite-info">
+              <span class="invite-tag">PHÒNG ĐẤU</span>
+              <span class="room-code-badge" id="lobby-room-code">#ARENA-5V5</span>
+            </div>
+            <button id="btn-copy-invite" class="btn-secondary">
+              <span>📋</span> Sao Chép Link Mời Bạn Bè
+            </button>
+          </div>
+
+          <!-- Big Play Button -->
+          <button id="btn-join" class="btn-primary-play">
+            <span class="play-icon">⚔️</span>
+            <span>VÀO TRẬN ĐẤU NGAY</span>
+          </button>
+
+          <!-- Career Quick Stats -->
+          <div class="career-stats-row">
+            <div class="career-stat-item">
+              <span class="cs-label">Kỷ lục điểm</span>
+              <span class="cs-val" id="my-high-score">0</span>
+            </div>
+            <div class="cs-divider"></div>
+            <div class="career-stat-item">
+              <span class="cs-label">Tổng Kills</span>
+              <span class="cs-val" id="my-total-kills">0</span>
+            </div>
+            <div class="cs-divider"></div>
+            <div class="career-stat-item">
+              <span class="cs-label">Số trận</span>
+              <span class="cs-val" id="my-matches-count">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Global Leaderboard (Human Players Only) -->
+        <div class="lobby-card card-rank">
+          <div class="card-header flex-between">
+            <h2>🏆 Bảng Rank Cao Thủ <span>(Người Thật)</span></h2>
+            <button id="btn-refresh-rank" class="btn-refresh-icon" title="Cập nhật bảng xếp hạng">🔄</button>
+          </div>
+
+          <p class="rank-subtitle">Bảng vinh danh tích điểm từ các trận đấu nhiều người chơi</p>
+
+          <div class="rank-table-container">
+            <table class="global-rank-table">
+              <thead>
+                <tr>
+                  <th style="width: 48px;">Hạng</th>
+                  <th>Người Chơi</th>
+                  <th>Bậc Rank</th>
+                  <th style="text-align: right;">Kỷ Lục</th>
+                  <th style="text-align: right;">Kills</th>
+                </tr>
+              </thead>
+              <tbody id="global-rank-tbody">
+                <tr><td colspan="5" class="table-loading">Đang tải dữ liệu cao thủ...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
-      <div class="input-group">
-        <label class="input-label">Chọn màu sắc chiến binh</label>
-        <div class="skin-selector">
-          <div class="skin-option active" data-color="#00f0ff" style="background: radial-gradient(circle, #00f0ff, #007799);" title="Electric Cyan"></div>
-          <div class="skin-option" data-color="#ff007f" style="background: radial-gradient(circle, #ff007f, #880044);" title="Neon Magenta"></div>
-          <div class="skin-option" data-color="#00ff88" style="background: radial-gradient(circle, #00ff88, #007733);" title="Toxic Emerald"></div>
-          <div class="skin-option" data-color="#ffbe0b" style="background: radial-gradient(circle, #ffbe0b, #996600);" title="Golden Solar"></div>
-          <div class="skin-option" data-color="#9d4edd" style="background: radial-gradient(circle, #9d4edd, #4a154b);" title="Cyber Violet"></div>
-          <div class="skin-option" data-color="#ff3b30" style="background: radial-gradient(circle, #ff3b30, #7a0000);" title="Crimson Blaze"></div>
+      <!-- Bottom Skill & Item Guide -->
+      <footer class="lobby-skills-footer">
+        <h3 class="skills-guide-title">✨ Hệ Thống Vật Phẩm Cường Hóa (Nhặt trên Map & Dùng Thủ Công)</h3>
+        <div class="powerups-guide-grid">
+          <div class="guide-item">
+            <div class="guide-badge nitro">⚡ [Phím 1]</div>
+            <div class="guide-desc">
+              <strong>Tăng Tốc Đột Biến:</strong> Phóng vọt 2.2x trong 5 giây, <em>không hao hụt độ dài và điểm</em>!
+            </div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-badge vision">👁️ [Phím 2]</div>
+            <div class="guide-desc">
+              <strong>Thấu Kính Thần Nhãn:</strong> Mở rộng tầm nhìn 1.7x trong 8 giây để bao quát toàn cảnh và săn mồi!
+            </div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-badge magnet">🧲 [Phím 3]</div>
+            <div class="guide-desc">
+              <strong>Nam Châm Hút Hồn:</strong> Hút dồn dập toàn bộ hạt thức ăn trong bán kính 420px trong 6 giây!
+            </div>
+          </div>
         </div>
-      </div>
+      </footer>
 
-      <button id="btn-join" class="btn-primary">⚔️ Vào Trận Đấu Ngay</button>
-
-      <div class="instructions-grid">
-        <div class="instruction-item">
-          <span>🕹️</span>
-          <span><strong>Joystick:</strong> Điều hướng rắn</span>
-        </div>
-        <div class="instruction-item">
-          <span>⚡</span>
-          <span><strong>Nút BOOST:</strong> Tăng tốc</span>
-        </div>
-        <div class="instruction-item">
-          <span>🍎</span>
-          <span><strong>Ăn thức ăn:</strong> Dài & Mạnh hơn</span>
-        </div>
-        <div class="instruction-item">
-          <span>💥</span>
-          <span><strong>Cắt đầu địch:</strong> Hạ gục & đoạt điểm</span>
-        </div>
-      </div>
     </div>
   </div>
 
   <!-- ================= IN-GAME HUD ================= -->
   <div class="game-hud">
 
-    <!-- Top Bar: Timer & Player Count -->
+    <!-- Top Bar: Timer, Player Count, Exit to Lobby -->
     <div class="top-bar hud-interactive">
+      <button id="btn-hud-lobby" class="hud-lobby-btn" title="Rời về Sảnh">🏠 Sảnh</button>
+      <div class="hud-divider"></div>
       <div id="match-timer" class="match-timer">⏱️ 03:00</div>
       <div class="hud-divider"></div>
       <div id="player-count" class="player-count-badge">👥 1 người chơi</div>
     </div>
 
-    <!-- Kill Feed (top-left, below top-bar on mobile) -->
+    <!-- Kill Feed -->
     <div id="kill-feed" class="kill-feed"></div>
 
-    <!-- Leaderboard (right side, collapsible on mobile) -->
+    <!-- Leaderboard in-match -->
     <div class="leaderboard-panel hud-interactive" id="leaderboard-panel">
       <div class="leaderboard-title" id="leaderboard-toggle">
-        <span>🏆</span> <span class="lb-title-text">Xếp Hạng</span>
+        <span>🏆</span> <span class="lb-title-text">Xếp Hạng Trận</span>
         <span class="lb-collapse-icon">▲</span>
       </div>
       <ul id="leaderboard-list" class="leaderboard-list">
@@ -104,7 +209,7 @@
       </div>
     </div>
 
-    <!-- Minimap (desktop only — hidden on mobile to save space) -->
+    <!-- Minimap (desktop only) -->
     <div class="minimap-container hud-interactive desktop-only">
       <canvas id="minimap-canvas"></canvas>
     </div>
@@ -112,9 +217,36 @@
     <!-- Audio Mute Button -->
     <button id="btn-mute" class="floating-btn hud-interactive" title="Bật/Tắt âm thanh">🔊</button>
 
+    <!-- ===== POWER-UP SKILLS HOTBAR ===== -->
+    <div class="skills-hotbar hud-interactive" id="skills-hotbar">
+      <!-- Nitro Skill -->
+      <div class="skill-btn" id="btn-skill-nitro" data-skill="nitro" title="Tăng Tốc Đột Biến (Phím 1)">
+        <span class="skill-icon">⚡</span>
+        <span class="skill-key">1</span>
+        <span class="skill-stock" id="stock-nitro">0</span>
+        <div class="skill-cooldown-bar" id="cd-nitro"></div>
+      </div>
+
+      <!-- Vision Skill -->
+      <div class="skill-btn" id="btn-skill-vision" data-skill="vision" title="Thấu Kính Thần Nhãn (Phím 2)">
+        <span class="skill-icon">👁️</span>
+        <span class="skill-key">2</span>
+        <span class="skill-stock" id="stock-vision">0</span>
+        <div class="skill-cooldown-bar" id="cd-vision"></div>
+      </div>
+
+      <!-- Magnet Skill -->
+      <div class="skill-btn" id="btn-skill-magnet" data-skill="magnet" title="Nam Châm Hút Thức Ăn (Phím 3)">
+        <span class="skill-icon">🧲</span>
+        <span class="skill-key">3</span>
+        <span class="skill-stock" id="stock-magnet">0</span>
+        <div class="skill-cooldown-bar" id="cd-magnet"></div>
+      </div>
+    </div>
+
     <!-- ===== MOBILE CONTROLS ===== -->
     <div class="mobile-controls" id="mobile-controls">
-      <!-- Virtual Joystick (left side) -->
+      <!-- Virtual Joystick -->
       <div class="joystick-zone" id="joystick-zone">
         <div class="joystick-base" id="joystick-base">
           <div class="joystick-label">🕹️</div>
@@ -122,7 +254,7 @@
         </div>
       </div>
 
-      <!-- Boost Button (right side) -->
+      <!-- Boost Button -->
       <div id="btn-touch-boost" class="boost-touch-btn hud-interactive">
         <span class="boost-icon">⚡</span>
         <span class="boost-label">BOOST</span>
@@ -130,6 +262,9 @@
     </div>
 
   </div>
+
+  <!-- ================= TOAST CONTAINER ================= -->
+  <div id="toast-container" class="toast-container"></div>
 
   <!-- ================= MODAL: DEATH / RESPAWN ================= -->
   <div id="modal-death" class="modal-overlay hidden">
@@ -149,7 +284,10 @@
         </div>
       </div>
 
-      <button id="btn-respawn" class="btn-respawn">🔄 Hồi Sinh & Tiếp Tục Chiến Đấu</button>
+      <div class="modal-actions-row">
+        <button id="btn-respawn" class="btn-respawn">🔄 Hồi Sinh & Chiến Tiếp</button>
+        <button id="btn-death-lobby" class="btn-modal-lobby">🏠 Về Sảnh</button>
+      </div>
     </div>
   </div>
 
@@ -179,6 +317,10 @@
       </div>
 
       <div id="intermission-time" class="intermission-countdown">Vòng đấu mới trong: 8s</div>
+
+      <div style="margin-top: 18px;">
+        <button id="btn-matchover-lobby" class="btn-modal-lobby" style="width: 100%;">🏠 Trở Về Sảnh Chính</button>
+      </div>
     </div>
   </div>
 
