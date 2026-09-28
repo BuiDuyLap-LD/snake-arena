@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Multiplayer Snake Arena 5v5 - Đấu Trường Rắn Săn Mồi Cực Đỉnh</title>
-  <meta name="description" content="Game rắn săn mồi 2D nhiều người chơi trực tuyến với hệ thống kỹ năng cường hóa, bảng rank toàn cầu và mời bạn bè cùng chiến!">
+  <meta name="description"
+    content="Game rắn săn mồi 2D nhiều người chơi trực tuyến với tài khoản cố định lưu vĩnh viễn Rank, kỹ năng cường hóa, và bảng rank toàn cầu!">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
 </head>
+
 <body>
 
   <!-- Main Game Canvas -->
@@ -16,7 +20,7 @@
   <!-- ================= LOBBY / MAIN MENU ================= -->
   <div id="screen-lobby" class="overlay-screen">
     <div class="lobby-wrapper">
-      
+
       <!-- Lobby Header -->
       <header class="lobby-header">
         <div class="lobby-brand">
@@ -31,13 +35,33 @@
             <span class="online-dot"></span>
             <span id="lobby-online-count">Trực tuyến: 1 người chơi</span>
           </div>
+
+          <!-- Account Widget -->
+          <div id="account-widget" class="account-widget">
+            <button id="btn-open-auth" class="btn-auth-pill">👤 Đăng Nhập / Đăng Ký</button>
+            <div id="user-logged-box" class="user-logged-capsule hidden">
+              <span class="logged-avatar">🐍</span>
+              <div class="logged-user-details">
+                <span id="logged-username" class="logged-name">Player</span>
+                <span id="logged-tier" class="logged-tier">🥉 Đồng</span>
+              </div>
+              <button id="btn-logout" class="btn-logout-icon" title="Đăng xuất">🚪</button>
+            </div>
+          </div>
+
+          <!-- Friends & Social Button -->
+          <button id="btn-open-friends" class="btn-friends-pill" title="Bạn bè & Trò chuyện">
+            <span>👥 Bạn Bè</span>
+            <span id="friends-badge-online" class="friends-pill-badge hidden">0</span>
+          </button>
+
           <button id="btn-lobby-sound" class="btn-icon-pill" title="Âm thanh">🔊</button>
         </div>
       </header>
 
       <!-- Lobby Main Grid -->
       <div class="lobby-grid">
-        
+
         <!-- Left Panel: Player Setup & Party / Room -->
         <div class="lobby-card card-station">
           <div class="card-header">
@@ -47,28 +71,45 @@
           <!-- Snake Live Preview -->
           <div class="snake-preview-box">
             <div id="snake-avatar-preview" class="snake-avatar-head">
-              <div class="avatar-eye left"><div class="avatar-pupil"></div></div>
-              <div class="avatar-eye right"><div class="avatar-pupil"></div></div>
+              <div class="avatar-eye left">
+                <div class="avatar-pupil"></div>
+              </div>
+              <div class="avatar-eye right">
+                <div class="avatar-pupil"></div>
+              </div>
             </div>
             <div class="player-rank-pill" id="my-tier-badge">🥉 Hạng: Đồng</div>
+          </div>
+
+          <!-- Guest Notice -->
+          <div id="guest-notice" class="guest-notice">
+            <span>💡 Bạn đang chơi tạm. <strong id="link-create-acc">Tạo tài khoản cố định</strong> để bảo lưu vĩnh viễn
+              Rank & Kỷ Lục!</span>
           </div>
 
           <!-- Name Input -->
           <div class="input-group">
             <label for="player-name" class="input-label">Biệt danh chiến đấu</label>
-            <input type="text" id="player-name" class="text-input" placeholder="Nhập tên của bạn..." maxlength="16" value="Viper Master" autofocus>
+            <input type="text" id="player-name" class="text-input" placeholder="Nhập tên của bạn..." maxlength="16"
+              value="Viper Master" autofocus>
           </div>
 
           <!-- Skin Selection -->
           <div class="input-group">
             <label class="input-label">Màu sắc chiến binh</label>
             <div class="skin-selector">
-              <div class="skin-option active" data-color="#00f0ff" style="background: radial-gradient(circle, #00f0ff, #007799);" title="Electric Cyan"></div>
-              <div class="skin-option" data-color="#ff007f" style="background: radial-gradient(circle, #ff007f, #880044);" title="Neon Magenta"></div>
-              <div class="skin-option" data-color="#00ff88" style="background: radial-gradient(circle, #00ff88, #007733);" title="Toxic Emerald"></div>
-              <div class="skin-option" data-color="#ffbe0b" style="background: radial-gradient(circle, #ffbe0b, #996600);" title="Golden Solar"></div>
-              <div class="skin-option" data-color="#9d4edd" style="background: radial-gradient(circle, #9d4edd, #4a154b);" title="Cyber Violet"></div>
-              <div class="skin-option" data-color="#ff3b30" style="background: radial-gradient(circle, #ff3b30, #7a0000);" title="Crimson Blaze"></div>
+              <div class="skin-option active" data-color="#00f0ff"
+                style="background: radial-gradient(circle, #00f0ff, #007799);" title="Electric Cyan"></div>
+              <div class="skin-option" data-color="#ff007f"
+                style="background: radial-gradient(circle, #ff007f, #880044);" title="Neon Magenta"></div>
+              <div class="skin-option" data-color="#00ff88"
+                style="background: radial-gradient(circle, #00ff88, #007733);" title="Toxic Emerald"></div>
+              <div class="skin-option" data-color="#ffbe0b"
+                style="background: radial-gradient(circle, #ffbe0b, #996600);" title="Golden Solar"></div>
+              <div class="skin-option" data-color="#9d4edd"
+                style="background: radial-gradient(circle, #9d4edd, #4a154b);" title="Cyber Violet"></div>
+              <div class="skin-option" data-color="#ff3b30"
+                style="background: radial-gradient(circle, #ff3b30, #7a0000);" title="Crimson Blaze"></div>
             </div>
           </div>
 
@@ -86,7 +127,7 @@
           <!-- Big Play Button -->
           <button id="btn-join" class="btn-primary-play">
             <span class="play-icon">⚔️</span>
-            <span>VÀO TRẬN ĐẤU NGAY</span>
+            <span>VÀO GÊM</span>
           </button>
 
           <!-- Career Quick Stats -->
@@ -129,7 +170,9 @@
                 </tr>
               </thead>
               <tbody id="global-rank-tbody">
-                <tr><td colspan="5" class="table-loading">Đang tải dữ liệu cao thủ...</td></tr>
+                <tr>
+                  <td colspan="5" class="table-loading">Đang tải dữ liệu cao thủ...</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -266,6 +309,45 @@
   <!-- ================= TOAST CONTAINER ================= -->
   <div id="toast-container" class="toast-container"></div>
 
+  <!-- ================= MODAL: AUTHENTICATION (CỐ ĐỊNH TÀI KHOẢN) ================= -->
+  <div id="modal-auth" class="modal-overlay hidden">
+    <div class="modal-content auth-modal-card">
+      <button id="btn-close-auth" class="modal-close-btn" title="Đóng">✕</button>
+      <div style="font-size: 38px; margin-bottom: 6px;">🛡️</div>
+      <h2 id="auth-title" class="death-title" style="color: var(--primary-cyan); font-size: 24px; margin-bottom: 4px;">
+        TÀI KHOẢN CỐ ĐỊNH</h2>
+      <p class="death-reason" style="font-size: 13px; margin-bottom: 16px;">Lưu vĩnh viễn Bậc Rank, Kỷ lục điểm và Kills
+        để tiếp tục mọi lúc mọi nơi!</p>
+
+      <!-- Tabs: Login / Register -->
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active" type="button">Đăng Nhập</button>
+        <button id="tab-register" class="auth-tab" type="button">Tạo Tài Khoản Mới</button>
+      </div>
+
+      <form id="auth-form" class="auth-form">
+        <div class="input-group">
+          <label for="auth-input-username" class="input-label">Biệt danh / Tên tài khoản</label>
+          <input type="text" id="auth-input-username" class="text-input" placeholder="Từ 3 đến 16 ký tự..."
+            maxlength="16" required autocomplete="username">
+        </div>
+
+        <div class="input-group">
+          <label for="auth-input-password" class="input-label">Mật khẩu bảo vệ</label>
+          <input type="password" id="auth-input-password" class="text-input" placeholder="Nhập mật khẩu..." required
+            autocomplete="current-password">
+        </div>
+
+        <div id="auth-error-msg" class="auth-error-alert hidden"></div>
+
+        <button type="submit" id="btn-submit-auth" class="btn-primary-play"
+          style="padding: 13px; font-size: 15px; margin-top: 8px;">
+          ĐĂNG NHẬP NGAY
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- ================= MODAL: DEATH / RESPAWN ================= -->
   <div id="modal-death" class="modal-overlay hidden">
     <div class="modal-content">
@@ -291,36 +373,290 @@
     </div>
   </div>
 
-  <!-- ================= MODAL: MATCH OVER ================= -->
-  <div id="modal-match-over" class="modal-overlay hidden">
-    <div class="modal-content" style="border-color: #ffd700;">
-      <div style="font-size: 48px; margin-bottom: 8px;">🏆</div>
-      <h2 class="death-title" style="color: #ffd700;">HẾT GIỜ ĐẤU!</h2>
-      <p class="death-reason">Bảng vinh danh các dũng sĩ rắn mạnh nhất</p>
+  <!-- ================= CELEBRATION CONFETTI CANVAS ================= -->
+  <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
 
+  <!-- ================= MODAL: RICH MATCH OVER / HIỆP ĐẤU KẾT THÚC ================= -->
+  <div id="modal-match-over" class="modal-overlay hidden">
+    <div class="modal-content match-over-card">
+      
+      <!-- Match Result Header Banner -->
+      <div class="match-over-header">
+        <div id="match-over-trophy" class="match-over-trophy">🏆</div>
+        <h2 id="match-over-title" class="match-over-title">KẾT THÚC HIỆP ĐẤU!</h2>
+        <p id="match-over-subtitle" class="match-over-subtitle">Tổng kết chiến tích các dũng sĩ & Vinh danh cao thủ</p>
+      </div>
+
+      <!-- Top 3 Podium with MVP Badge -->
       <div class="podium-container">
         <div id="podium-second" class="podium-step second">
           <div class="podium-avatar">🥈</div>
           <div class="podium-name">-</div>
           <div class="podium-score">-</div>
+          <div class="podium-kills">- kills</div>
         </div>
         <div id="podium-first" class="podium-step first">
+          <div class="mvp-tag">👑 MVP VÒNG ĐẤU</div>
           <div class="podium-avatar">👑</div>
           <div class="podium-name">-</div>
           <div class="podium-score">-</div>
+          <div class="podium-kills">- kills</div>
         </div>
         <div id="podium-third" class="podium-step third">
           <div class="podium-avatar">🥉</div>
           <div class="podium-name">-</div>
           <div class="podium-score">-</div>
+          <div class="podium-kills">- kills</div>
         </div>
       </div>
 
-      <div id="intermission-time" class="intermission-countdown">Vòng đấu mới trong: 8s</div>
-
-      <div style="margin-top: 18px;">
-        <button id="btn-matchover-lobby" class="btn-modal-lobby" style="width: 100%;">🏠 Trở Về Sảnh Chính</button>
+      <!-- Personal Performance Card -->
+      <div class="personal-performance-box" id="personal-performance-box">
+        <div class="personal-perf-header">
+          <span class="perf-tag">⚡ THÀNH TÍCH CỦA BẠN</span>
+          <span id="perf-new-record" class="perf-record-badge hidden">🔥 KỶ LỤC MỚI!</span>
+        </div>
+        <div class="personal-perf-grid">
+          <div class="perf-stat">
+            <span class="perf-label">Xếp Hạng</span>
+            <span id="perf-rank" class="perf-val highlight">#1</span>
+          </div>
+          <div class="perf-stat">
+            <span class="perf-label">Điểm Số</span>
+            <span id="perf-score" class="perf-val cyan">0</span>
+          </div>
+          <div class="perf-stat">
+            <span class="perf-label">Hạ Gục</span>
+            <span id="perf-kills" class="perf-val red">0</span>
+          </div>
+          <div class="perf-stat">
+            <span class="perf-label">Độ Dài Cực Đại</span>
+            <span id="perf-length" class="perf-val">22</span>
+          </div>
+        </div>
       </div>
+
+      <!-- Detailed Round Scoreboard Table -->
+      <div class="match-scoreboard-container">
+        <div class="scoreboard-title-row">
+          <span>📋 Bảng Điểm Chi Tiết Toàn Vòng</span>
+          <span class="scoreboard-hint">Bấm 🤝 để kết bạn hoặc ❤️ để khen thưởng</span>
+        </div>
+        <div class="scoreboard-scroll">
+          <table class="match-scoreboard-table">
+            <thead>
+              <tr>
+                <th style="width: 44px;">Hạng</th>
+                <th>Dũng Sĩ</th>
+                <th>Điểm Số</th>
+                <th>Kills</th>
+                <th>Dài</th>
+                <th style="text-align: right;">Tương Tác</th>
+              </tr>
+            </thead>
+            <tbody id="match-scoreboard-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Next Round Countdown Bar -->
+      <div class="intermission-bar-container">
+        <div class="intermission-info-row">
+          <span id="intermission-time" class="intermission-countdown">Vòng đấu mới trong: 8s</span>
+          <span class="intermission-status">Hệ thống đang chuẩn bị bản đồ mới...</span>
+        </div>
+        <div class="intermission-progress-track">
+          <div id="intermission-progress-bar" class="intermission-progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- Match Over Actions -->
+      <div class="match-actions-row">
+        <button id="btn-matchover-ready" class="btn-respawn">
+          <span>🎮</span> SẴN SÀNG HIỆP TIẾP THEO
+        </button>
+        <button id="btn-matchover-share" class="btn-secondary" title="Sao chép kết quả thi đấu để chia sẻ">
+          <span>📋</span> Khoe Chiến Tích
+        </button>
+        <button id="btn-matchover-lobby" class="btn-modal-lobby">
+          <span>🏠</span> Về Sảnh
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= MODAL: FRIENDS & SOCIAL HUB ================= -->
+  <div id="modal-friends" class="modal-overlay hidden">
+    <div class="modal-content friends-modal-card">
+      
+      <!-- Friends Header -->
+      <div class="friends-modal-header">
+        <div class="friends-header-title">
+          <span class="friends-title-icon">👥</span>
+          <div>
+            <h3>BẠN BÈ & CỘNG ĐỒNG</h3>
+            <p class="friends-header-sub">Kết bạn, nhắn tin trò chuyện và rủ nhau cùng săn mồi</p>
+          </div>
+        </div>
+        <button id="btn-close-friends" class="modal-close-btn" title="Đóng">✕</button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="friends-tabs">
+        <button id="tab-btn-friends" class="friends-tab-btn active">
+          👥 Bạn Bè (<span id="friends-tab-count">0</span>)
+        </button>
+        <button id="tab-btn-requests" class="friends-tab-btn">
+          🔔 Lời Mời <span id="requests-tab-badge" class="tab-badge-pill hidden">0</span>
+        </button>
+        <button id="tab-btn-search" class="friends-tab-btn">
+          ➕ Tìm Bạn Mới
+        </button>
+        <button id="tab-btn-lobbychat" class="friends-tab-btn">
+          💬 Kênh Sảnh Chung
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Friend List -->
+      <div id="tab-content-friends" class="friends-tab-content">
+        <div id="friends-list-container" class="friends-cards-container">
+          <!-- Dynamic friend cards -->
+        </div>
+      </div>
+
+      <!-- Tab Content 2: Incoming Requests -->
+      <div id="tab-content-requests" class="friends-tab-content hidden">
+        <div id="requests-list-container" class="friends-cards-container">
+          <!-- Dynamic friend request cards -->
+        </div>
+      </div>
+
+      <!-- Tab Content 3: Search / Add Friends -->
+      <div id="tab-content-search" class="friends-tab-content hidden">
+        <div class="search-friend-bar">
+          <input type="text" id="input-search-friend" class="text-input" placeholder="Nhập tên dũng sĩ cần tìm kiếm..." maxlength="16">
+          <button id="btn-search-friend-submit" class="btn-primary-play" style="padding: 10px 18px; font-size: 14px;">
+            🔍 Tìm
+          </button>
+        </div>
+        <div class="search-hint">💡 Nhập biệt danh của bạn bè để gửi lời mời kết bạn tức thì!</div>
+        <div id="search-results-container" class="friends-cards-container">
+          <!-- Dynamic search results -->
+        </div>
+      </div>
+
+      <!-- Tab Content 4: Global Lobby Chat -->
+      <div id="tab-content-lobbychat" class="friends-tab-content hidden">
+        <div class="chat-container">
+          <div id="lobby-chat-messages" class="chat-messages-box">
+            <!-- Messages rendered dynamically -->
+          </div>
+          <!-- Quick Emojis -->
+          <div class="quick-emojis-row" id="lobby-quick-emojis">
+            <span class="emoji-chip" data-emoji="🔥">🔥</span>
+            <span class="emoji-chip" data-emoji="🐍">🐍</span>
+            <span class="emoji-chip" data-emoji="👑">👑</span>
+            <span class="emoji-chip" data-emoji="⚡">⚡</span>
+            <span class="emoji-chip" data-emoji="💣">💣</span>
+            <span class="emoji-chip" data-emoji="🎯">🎯</span>
+            <span class="emoji-chip" data-emoji="❤️">❤️</span>
+            <span class="emoji-chip" data-emoji="🚀">🚀</span>
+          </div>
+          <!-- Chat Input -->
+          <form id="lobby-chat-form" class="chat-input-form">
+            <input type="text" id="input-lobby-chat" class="text-input chat-input" placeholder="Nhập tin nhắn sảnh chung..." maxlength="180">
+            <button type="submit" class="btn-chat-send">Gửi 🚀</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Private Chat Drawer (overlays friends modal when active) -->
+      <div id="private-chat-drawer" class="private-chat-drawer hidden">
+        <div class="private-chat-header">
+          <button id="btn-back-from-chat" class="btn-chat-back">◀ Quay Lại</button>
+          <div class="private-chat-target-info">
+            <div id="private-chat-avatar" class="chat-avatar-mini" style="background: #00f0ff;">🐍</div>
+            <div>
+              <span id="private-chat-name" class="private-chat-name">Player</span>
+              <span id="private-chat-status" class="private-chat-status">🟢 Trực tuyến</span>
+            </div>
+          </div>
+          <button id="btn-close-private-chat" class="modal-close-btn" style="margin: 0;" title="Đóng chat">✕</button>
+        </div>
+        <div id="private-chat-messages" class="chat-messages-box private">
+          <!-- Private messages -->
+        </div>
+        <!-- Quick Emojis -->
+        <div class="quick-emojis-row" id="private-quick-emojis">
+          <span class="emoji-chip" data-emoji="🔥">🔥</span>
+          <span class="emoji-chip" data-emoji="🐍">🐍</span>
+          <span class="emoji-chip" data-emoji="👑">👑</span>
+          <span class="emoji-chip" data-emoji="⚡">⚡</span>
+          <span class="emoji-chip" data-emoji="💣">💣</span>
+          <span class="emoji-chip" data-emoji="🎯">🎯</span>
+          <span class="emoji-chip" data-emoji="❤️">❤️</span>
+          <span class="emoji-chip" data-emoji="🚀">🚀</span>
+        </div>
+        <form id="private-chat-form" class="chat-input-form">
+          <input type="text" id="input-private-chat" class="text-input chat-input" placeholder="Nhắn tin riêng cho bạn..." maxlength="180">
+          <button type="submit" class="btn-chat-send">Gửi 💬</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= MODAL: PLAYER PROFILE VIEW ================= -->
+  <div id="modal-profile-card" class="modal-overlay hidden">
+    <div class="modal-content profile-modal-card">
+      <button id="btn-close-profile" class="modal-close-btn" title="Đóng">✕</button>
+      <div class="profile-avatar-wrap">
+        <div id="profile-card-avatar" class="profile-big-avatar" style="background: #00f0ff;">🐍</div>
+        <span id="profile-card-status-badge" class="profile-status-pill">🟢 Ở Sảnh</span>
+      </div>
+      <h3 id="profile-card-name" class="profile-card-name">Dũng Sĩ Viper</h3>
+      <div id="profile-card-tier" class="player-rank-pill" style="display: inline-block; margin-bottom: 16px;">🥇 Bậc: Vàng</div>
+
+      <div class="death-stats-grid" style="margin-bottom: 16px;">
+        <div class="death-stat-card">
+          <span class="death-stat-label">Kỷ lục điểm</span>
+          <div id="profile-card-score" class="death-stat-val" style="color: var(--primary-cyan);">0</div>
+        </div>
+        <div class="death-stat-card">
+          <span class="death-stat-label">Tổng Kills</span>
+          <div id="profile-card-kills" class="death-stat-val" style="color: #ff3366;">0</div>
+        </div>
+        <div class="death-stat-card">
+          <span class="death-stat-label">Số trận chiến</span>
+          <div id="profile-card-matches" class="death-stat-val">0</div>
+        </div>
+        <div class="death-stat-card">
+          <span class="death-stat-label">Tổng bạn bè</span>
+          <div id="profile-card-friends" class="death-stat-val" style="color: var(--neon-green);">0</div>
+        </div>
+      </div>
+
+      <div id="profile-card-actions" class="modal-actions-row">
+        <!-- Buttons injected dynamically based on friend status -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FLOATING GAME INVITE DIALOG ================= -->
+  <div id="invite-prompt-box" class="invite-prompt-box hidden">
+    <div class="invite-prompt-header">
+      <span class="invite-prompt-icon">⚔️</span>
+      <div class="invite-prompt-text">
+        <strong id="invite-prompt-sender">Dũng Sĩ</strong>
+        <span>rủ bạn tham chiến tại phòng <b id="invite-prompt-room">#ARENA-5V5</b>!</span>
+      </div>
+    </div>
+    <div class="invite-prompt-actions">
+      <button id="btn-invite-accept" class="btn-prompt-accept">⚔️ THAM GIA NGAY</button>
+      <button id="btn-invite-decline" class="btn-prompt-decline">Từ Chối</button>
     </div>
   </div>
 
@@ -330,4 +666,5 @@
   <script src="js/input.js"></script>
   <script src="js/main.js"></script>
 </body>
+
 </html>

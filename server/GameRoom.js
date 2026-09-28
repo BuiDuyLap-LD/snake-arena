@@ -4,6 +4,7 @@ const Snake = require('./Snake');
 const FoodManager = require('./FoodManager');
 const PowerupManager = require('./PowerupManager');
 const leaderboardManager = require('./LeaderboardManager');
+const accountManager = require('./AccountManager');
 
 class GameRoom {
   constructor(roomId = 'arena-main') {
@@ -120,10 +121,10 @@ class GameRoom {
     if (this.loopInterval) clearInterval(this.loopInterval);
   }
 
-  addPlayer(ws, playerId, playerName, playerColor) {
+  addPlayer(ws, playerId, playerName, playerColor, accountUsername = null) {
     const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
     const snake = new Snake(playerId, playerName, playerColor, false, pos, angle);
-    this.players.set(playerId, { ws, snake });
+    this.players.set(playerId, { ws, snake, accountUsername });
 
     this.sendTo(ws, {
       type: 'INIT_GAME',
@@ -135,15 +136,21 @@ class GameRoom {
       powerups: this.powerupManager.getAllPowerups(),
     });
 
-    console.log(`[GameRoom] Player joined: ${playerName} (${playerId}) at (${pos.x}, ${pos.y}). Total: ${this.players.size}`);
+    const accInfo = accountUsername ? ` [Tài khoản: ${accountUsername}]` : ' [Khách]';
+    console.log(`[GameRoom] Player joined: ${playerName} (${playerId})${accInfo} at (${pos.x}, ${pos.y}).`);
   }
 
   removePlayer(playerId) {
     const player = this.players.get(playerId);
     if (player) {
       if (player.snake && player.snake.alive) {
-        leaderboardManager.recordPlayerScore(player.snake.name, player.snake.score, player.snake.kills);
         this.foodManager.spawnDeadSnakeFood(player.snake.body, player.snake.color);
+        // Ghi stats theo accountUsername (nếu có tài khoản) hoặc theo tên hiển thị
+        const statsTarget = player.accountUsername || player.snake.name;
+        leaderboardManager.recordPlayerScore(statsTarget, player.snake.score, player.snake.kills);
+        if (player.accountUsername) {
+          accountManager.recordGameStats(player.accountUsername, player.snake.score, player.snake.kills);
+        }
       }
       this.players.delete(playerId);
       console.log(`[GameRoom] Player left: ${playerId}. Remaining: ${this.players.size}`);
@@ -176,9 +183,13 @@ class GameRoom {
     const player = this.players.get(playerId);
     if (!player) return;
 
-    // Record previous life score before respawning
+    // Ghi stats cũ trước khi tái sinh
     if (player.snake) {
-      leaderboardManager.recordPlayerScore(player.snake.name, player.snake.score, player.snake.kills);
+      const statsTarget = player.accountUsername || player.snake.name;
+      leaderboardManager.recordPlayerScore(statsTarget, player.snake.score, player.snake.kills);
+      if (player.accountUsername) {
+        accountManager.recordGameStats(player.accountUsername, player.snake.score, player.snake.kills);
+      }
     }
 
     const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
@@ -305,12 +316,25 @@ class GameRoom {
     if (!victim.alive) return;
     victim.alive = false;
 
-    // Record human stats to persistent global leaderboard
+    // Record human stats to persistent global leaderboard & user account
     if (!victim.isBot) {
-      leaderboardManager.recordPlayerScore(victim.name, victim.score, victim.kills);
+      // Tìm player entry để lấy accountUsername
+      const victimPlayer = this.players.get(victim.id);
+      const victimAccount = victimPlayer ? victimPlayer.accountUsername : null;
+      const victimTarget = victimAccount || victim.name;
+      leaderboardManager.recordPlayerScore(victimTarget, victim.score, victim.kills);
+      if (victimAccount) {
+        accountManager.recordGameStats(victimAccount, victim.score, victim.kills);
+      }
     }
     if (killer && !killer.isBot) {
-      leaderboardManager.recordPlayerScore(killer.name, killer.score, killer.kills);
+      const killerPlayer = this.players.get(killer.id);
+      const killerAccount = killerPlayer ? killerPlayer.accountUsername : null;
+      const killerTarget = killerAccount || killer.name;
+      leaderboardManager.recordPlayerScore(killerTarget, killer.score, killer.kills);
+      if (killerAccount) {
+        accountManager.recordGameStats(killerAccount, killer.score, killer.kills);
+      }
     }
 
     this.foodManager.spawnDeadSnakeFood(victim.body, victim.color);
@@ -346,7 +370,13 @@ class GameRoom {
     // Record stats for all human players
     for (const s of allSnakes) {
       if (!s.isBot) {
-        leaderboardManager.recordPlayerScore(s.name, s.score, s.kills);
+        const playerEntry = this.players.get(s.id);
+        const accountUsr = playerEntry ? playerEntry.accountUsername : null;
+        const target = accountUsr || s.name;
+        leaderboardManager.recordPlayerScore(target, s.score, s.kills);
+        if (accountUsr) {
+          accountManager.recordGameStats(accountUsr, s.score, s.kills);
+        }
       }
     }
 
@@ -356,12 +386,14 @@ class GameRoom {
       name: s.name,
       score: s.score,
       kills: s.kills,
+      length: s.body.length,
+      color: s.color,
       isBot: s.isBot,
     }));
 
     this.broadcast({
       type: 'MATCH_OVER',
-      rankings: rankings.slice(0, 10),
+      rankings: rankings,
       intermissionDuration: this.intermissionDuration,
     });
 
