@@ -125,6 +125,18 @@ class FoodManager {
     const eaten = this.eatenIdsBatch;
     this.newFoodsBatch = [];
     this.eatenIdsBatch = [];
+
+    // Filter out foods that were spawned AND eaten in the same broadcast window.
+    // Sending them to the client would create "phantom food" that can never be eaten.
+    if (added.length > 0 && eaten.length > 0) {
+      const eatenSet = new Set(eaten);
+      const addedIds = new Set(added.map(f => f.id));
+      return {
+        added: added.filter(f => !eatenSet.has(f.id)),
+        eaten: eaten.filter(id => !addedIds.has(id)),
+      };
+    }
+
     return { added, eaten };
   }
 

@@ -26,13 +26,14 @@ class GameRoom {
     this.intermissionDuration = 8;
     this.intermissionTimer = 0;
 
-    // Tick loop: physics at 50 Hz, broadcast at 20 Hz (every 2-3 ticks)
+    // Tick loop: physics at 50 Hz, broadcast at 25 Hz (every 2 ticks)
+    // 25Hz gives 40ms max visual lag (at speed=190 → 7.6 units) — safe margin
     this.tickRate = 50;
     this.tickIntervalMs = 1000 / this.tickRate;
     this.lastTickTime = Date.now();
     this.running = false;
     this.broadcastTickCount = 0;
-    this.BROADCAST_EVERY_N = 3; // Broadcast 1 out of every 3 physics ticks (~16-17 Hz)
+    this.BROADCAST_EVERY_N = 2; // Broadcast every 2 physics ticks (25Hz)
 
     // Powerup dirty flag: only broadcast when changed
     this.powerupsDirty = true;
@@ -442,10 +443,11 @@ class GameRoom {
       isBot: s.isBot,
     }));
 
-    const snakesData = allSnakes.map(s => s.getSnapshotCompressed());
+    // Use full snapshot (no body compression) to prevent visual drift / invisible deaths
+    const snakesData = allSnakes.map(s => s.getSnapshot());
     const foodDelta = this.foodManager.getDelta();
 
-    // Only include powerups when they changed (dirty flag)
+    // Only include powerups when they changed (dirty flag) — saves bandwidth
     let powerupsPayload = undefined;
     const currentPowerupsJson = JSON.stringify(this.powerupManager.getAllPowerups());
     if (currentPowerupsJson !== this.lastPowerupsJson) {
