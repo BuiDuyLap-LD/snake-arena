@@ -1,0 +1,397 @@
+// server/GameRoom.js
+
+const Snake = require('./Snake');
+const FoodManager = require('./FoodManager');
+
+class GameRoom {
+  constructor(roomId = 'arena-main', io = null) {
+    this.roomId = roomId;
+    this.arenaRadius = 2200;
+    this.foodManager = new FoodManager(this.arenaRadius, 500);
+
+    this.players = new Map(); // ws/id -> { ws, snake }
+    this.bots = new Map();    // botId -> snake
+
+    this.targetBotCount = 6;
+    this.nextBotId = 1;
+
+    // Match round system
+    this.roundDuration = 180; // 3 minutes per round
+    this.timeRemaining = this.roundDuration;
+    this.isIntermission = false;
+    this.intermissionDuration = 8;
+    this.intermissionTimer = 0;
+
+    // Tick loop (50 Hz physics)
+    this.tickRate = 50;
+    this.tickIntervalMs = 1000 / this.tickRate;
+    this.lastTickTime = Date.now();
+    this.running = false;
+    this.broadcastTickCount = 0;
+
+    // Colors available for bots
+    this.botColors = [
+      '#ff3366', '#33ccff', '#ffaa00', '#00ffaa', 
+      '#cc33ff', '#ffff33', '#ff0055', '#00e5ff'
+    ];
+
+    // Maintain initial bots
+    this.ensureBots();
+  }
+
+  getAllSnakes() {
+    const list = [];
+    for (const p of this.players.values()) {
+      if (p.snake) list.push(p.snake);
+    }
+    for (const b of this.bots.values()) {
+      list.push(b);
+    }
+    return list;
+  }
+
+  findSafeSpawn(existingSnakes) {
+    let bestPos = { x: 0, y: 0 };
+    let bestDist = -1;
+    const maxRadius = this.arenaRadius - 400;
+
+    // Try multiple candidate spawn positions
+    const candidateCount = 20;
+    for (let c = 0; c < candidateCount; c++) {
+      const r = Math.sqrt(Math.random()) * maxRadius;
+      const theta = Math.random() * Math.PI * 2;
+      const candX = Math.cos(theta) * r;
+      const candY = Math.sin(theta) * r;
+
+      // Find distance to closest snake (head or segments)
+      let minClearance = 99999;
+      for (const s of existingSnakes) {
+        if (!s.alive) continue;
+        // Check head
+        const dh = Math.hypot(candX - s.head.x, candY - s.head.y);
+        if (dh < minClearance) minClearance = dh;
+
+        // Check body samples
+        for (let i = 0; i < s.body.length; i += 3) {
+          const ds = Math.hypot(candX - s.body[i].x, candY - s.body[i].y);
+          if (ds < minClearance) minClearance = ds;
+        }
+      }
+
+      // If clearance is over 550px, this position is very safe
+      if (minClearance > 550) {
+        bestPos = { x: Math.round(candX), y: Math.round(candY) };
+        bestDist = minClearance;
+        break;
+      }
+
+      if (minClearance > bestDist) {
+        bestDist = minClearance;
+        bestPos = { x: Math.round(candX), y: Math.round(candY) };
+      }
+    }
+
+    // Orient initial angle towards center
+    const initialAngle = Math.atan2(-bestPos.y, -bestPos.x) + (Math.random() - 0.5) * 0.5;
+
+    return { pos: bestPos, angle: initialAngle };
+  }
+
+  ensureBots() {
+    const needed = Math.max(0, this.targetBotCount - this.players.size) - this.bots.size;
+    const allSnakes = this.getAllSnakes();
+
+    for (let i = 0; i < needed; i++) {
+      const botId = `bot_${this.nextBotId++}`;
+      const color = this.botColors[Math.floor(Math.random() * this.botColors.length)];
+      const { pos, angle } = this.findSafeSpawn(allSnakes);
+      const bot = new Snake(botId, `Bot #${Math.floor(Math.random() * 900 + 100)}`, color, true, pos, angle);
+      this.bots.set(botId, bot);
+      allSnakes.push(bot);
+    }
+  }
+
+  start() {
+    if (this.running) return;
+    this.running = true;
+    this.lastTickTime = Date.now();
+    this.loopInterval = setInterval(() => this.tick(), this.tickIntervalMs);
+    console.log(`[GameRoom] Room ${this.roomId} started at ${this.tickRate}Hz.`);
+  }
+
+  stop() {
+    this.running = false;
+    if (this.loopInterval) clearInterval(this.loopInterval);
+  }
+
+  addPlayer(ws, playerId, playerName, playerColor) {
+    const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
+    const snake = new Snake(playerId, playerName, playerColor, false, pos, angle);
+    this.players.set(playerId, { ws, snake });
+
+    this.sendTo(ws, {
+      type: 'INIT_GAME',
+      playerId,
+      arenaRadius: this.arenaRadius,
+      roundDuration: this.roundDuration,
+      timeRemaining: Math.ceil(this.timeRemaining),
+      foods: this.foodManager.getAllFoods(),
+    });
+
+    console.log(`[GameRoom] Player joined: ${playerName} (${playerId}) at safe pos (${pos.x}, ${pos.y}). Total: ${this.players.size}`);
+  }
+
+  removePlayer(playerId) {
+    const player = this.players.get(playerId);
+    if (player) {
+      if (player.snake.alive) {
+        this.foodManager.spawnDeadSnakeFood(player.snake.body, player.snake.color);
+      }
+      this.players.delete(playerId);
+      console.log(`[GameRoom] Player left: ${playerId}. Remaining: ${this.players.size}`);
+      this.ensureBots();
+    }
+  }
+
+  handlePlayerInput(playerId, inputData) {
+    const player = this.players.get(playerId);
+    if (!player || !player.snake || !player.snake.alive) return;
+
+    if (typeof inputData.angle === 'number') {
+      player.snake.setTargetAngle(inputData.angle);
+    }
+    if (typeof inputData.boosting === 'boolean') {
+      player.snake.setBoosting(inputData.boosting);
+    }
+  }
+
+  respawnPlayer(playerId) {
+    const player = this.players.get(playerId);
+    if (!player) return;
+
+    const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
+    player.snake = new Snake(playerId, player.snake.name, player.snake.color, false, pos, angle);
+    console.log(`[GameRoom] Player respawned at safe pos (${pos.x}, ${pos.y}) with 3s shield.`);
+  }
+
+  tick() {
+    const now = Date.now();
+    const dt = Math.min(0.06, (now - this.lastTickTime) / 1000);
+    this.lastTickTime = now;
+
+    // Handle Round Intermission or Timer
+    if (this.isIntermission) {
+      this.intermissionTimer -= dt;
+      if (this.intermissionTimer <= 0) {
+        this.startNewRound();
+      }
+    } else {
+      this.timeRemaining -= dt;
+      if (this.timeRemaining <= 0) {
+        this.endRound();
+      }
+    }
+
+    const allSnakes = this.getAllSnakes();
+
+    // Update positions and handle boost pellets
+    for (const snake of allSnakes) {
+      if (!snake.alive) continue;
+      const pellet = snake.update(dt, this.arenaRadius, Array.from(this.foodManager.foods.values()), allSnakes);
+      if (pellet) {
+        this.foodManager.addPellet(pellet.x, pellet.y, pellet.value, pellet.color);
+      }
+
+      this.foodManager.checkHeadCollisions(snake);
+    }
+
+    // Check Collisions with Shield Protection
+    this.checkCollisions(allSnakes);
+
+    // Broadcast snapshot
+    this.broadcastTickCount++;
+    this.broadcastSnapshot(allSnakes);
+  }
+
+  checkCollisions(snakes) {
+    const killEvents = [];
+
+    for (let i = 0; i < snakes.length; i++) {
+      const s1 = snakes[i];
+      if (!s1.alive) continue;
+
+      // 1. Boundary check (immune if protected by shield)
+      const distFromCenter = Math.hypot(s1.head.x, s1.head.y);
+      if (distFromCenter >= this.arenaRadius - s1.radius) {
+        if (!s1.isShielded()) {
+          this.eliminateSnake(s1, null, 'va vào hàng rào năng lượng');
+          continue;
+        } else {
+          // Gently deflect back towards center if shielded
+          s1.head.x *= 0.98;
+          s1.head.y *= 0.98;
+        }
+      }
+
+      // 2. Snake head vs Snake body check
+      for (let j = 0; j < snakes.length; j++) {
+        const s2 = snakes[j];
+        if (!s2.alive) continue;
+
+        if (s1.id !== s2.id) {
+          // If EITHER snake is protected by spawn shield, ignore lethal collision!
+          if (s1.isShielded() || s2.isShielded()) {
+            continue;
+          }
+
+          const hitRadius = s1.radius + s2.radius * 0.75;
+          const hitRadiusSq = hitRadius * hitRadius;
+
+          for (let k = 0; k < s2.body.length; k++) {
+            const seg = s2.body[k];
+            const dx = s1.head.x - seg.x;
+            const dy = s1.head.y - seg.y;
+            if (dx * dx + dy * dy < hitRadiusSq) {
+              s2.kills += 1;
+              s2.score += Math.floor(s1.score * 0.4) + 150;
+              this.eliminateSnake(s1, s2, `bị hạ gục bởi ${s2.name}`);
+              killEvents.push({
+                killer: s2.name,
+                victim: s1.name,
+                killerId: s2.id,
+                victimId: s1.id,
+              });
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (killEvents.length > 0) {
+      this.broadcast({
+        type: 'KILL_EVENTS',
+        events: killEvents,
+      });
+    }
+  }
+
+  eliminateSnake(victim, killer = null, reason = '') {
+    if (!victim.alive) return;
+    victim.alive = false;
+
+    this.foodManager.spawnDeadSnakeFood(victim.body, victim.color);
+
+    if (victim.isBot) {
+      this.bots.delete(victim.id);
+      setTimeout(() => {
+        if (this.running) {
+          this.ensureBots();
+        }
+      }, 1800);
+    }
+
+    const playerEntry = this.players.get(victim.id);
+    if (playerEntry && playerEntry.ws) {
+      this.sendTo(playerEntry.ws, {
+        type: 'YOU_DIED',
+        killerName: killer ? killer.name : 'Hàng rào năng lượng',
+        score: victim.score,
+        kills: victim.kills,
+        reason,
+      });
+    }
+  }
+
+  endRound() {
+    this.isIntermission = true;
+    this.intermissionTimer = this.intermissionDuration;
+
+    const allSnakes = this.getAllSnakes();
+    allSnakes.sort((a, b) => b.score - a.score);
+
+    const rankings = allSnakes.map((s, index) => ({
+      rank: index + 1,
+      id: s.id,
+      name: s.name,
+      score: s.score,
+      kills: s.kills,
+      isBot: s.isBot,
+    }));
+
+    this.broadcast({
+      type: 'MATCH_OVER',
+      rankings: rankings.slice(0, 10),
+      intermissionDuration: this.intermissionDuration,
+    });
+
+    console.log(`[GameRoom] Match over! Winner: ${rankings[0] ? rankings[0].name : 'None'}`);
+  }
+
+  startNewRound() {
+    this.isIntermission = false;
+    this.timeRemaining = this.roundDuration;
+    this.foodManager = new FoodManager(this.arenaRadius, 500);
+
+    const allSnakes = [];
+    for (const [id, player] of this.players.entries()) {
+      const { pos, angle } = this.findSafeSpawn(allSnakes);
+      player.snake = new Snake(id, player.snake.name, player.snake.color, false, pos, angle);
+      allSnakes.push(player.snake);
+    }
+    this.bots.clear();
+    this.ensureBots();
+
+    this.broadcast({
+      type: 'MATCH_STARTED',
+      roundDuration: this.roundDuration,
+      foods: this.foodManager.getAllFoods(),
+    });
+    console.log(`[GameRoom] New match round started!`);
+  }
+
+  broadcastSnapshot(allSnakes) {
+    const sorted = [...allSnakes].sort((a, b) => b.score - a.score);
+    const leaderboard = sorted.slice(0, 10).map((s, i) => ({
+      rank: i + 1,
+      id: s.id,
+      name: s.name,
+      score: s.score,
+      kills: s.kills,
+      isBot: s.isBot,
+    }));
+
+    const snakesData = allSnakes.map(s => s.getSnapshot());
+    const foodDelta = this.foodManager.getDelta();
+
+    const snapshot = {
+      type: 'GAME_TICK',
+      timeRemaining: Math.max(0, Math.ceil(this.timeRemaining)),
+      isIntermission: this.isIntermission,
+      intermissionTimer: Math.ceil(this.intermissionTimer),
+      leaderboard,
+      snakes: snakesData,
+      foodAdded: foodDelta.added,
+      foodEaten: foodDelta.eaten,
+    };
+
+    this.broadcast(snapshot);
+  }
+
+  sendTo(ws, message) {
+    if (ws && ws.readyState === 1 /* OPEN */) {
+      ws.send(JSON.stringify(message));
+    }
+  }
+
+  broadcast(message) {
+    const data = JSON.stringify(message);
+    for (const p of this.players.values()) {
+      if (p.ws && p.ws.readyState === 1) {
+        p.ws.send(data);
+      }
+    }
+  }
+}
+
+module.exports = GameRoom;
