@@ -33,6 +33,17 @@ class GameRenderer {
     }
   }
 
+  // Decode compressed body from server: either [{x,y}] or [[x,y]] format
+  _decodeBody(body) {
+    if (!body || body.length === 0) return [];
+    if (Array.isArray(body[0])) {
+      // Compressed: array of [x, y] pairs
+      return body.map(pt => ({ x: pt[0], y: pt[1] }));
+    }
+    // Legacy: array of {x, y} objects
+    return body.map(pt => ({ x: pt.x, y: pt.y }));
+  }
+
   // Update server snapshot targets
   syncServerSnakes(serverSnakes) {
     if (!serverSnakes) return;
@@ -60,7 +71,7 @@ class GameRenderer {
           isBoosting: s.isBoosting,
           shield: s.shield,
           length: s.length,
-          body: s.body.map(pt => ({ x: pt.x, y: pt.y })),
+          body: this._decodeBody(s.body),
           activeEffects: s.activeEffects || { nitro: 0, vision: 0, magnet: 0 },
           inventory: s.inventory || { nitro: 0, vision: 0, magnet: 0 },
         };
@@ -84,14 +95,17 @@ class GameRenderer {
           interp.targetHead.y = s.head.y;
           interp.angle = s.angle;
           interp.targetAngle = s.angle;
-          interp.body = s.body.map(pt => ({ x: pt.x, y: pt.y }));
+          interp.body = this._decodeBody(s.body);
         } else {
           interp.targetHead.x = s.head.x;
           interp.targetHead.y = s.head.y;
           interp.targetAngle = s.angle;
 
-          if (Math.abs(interp.body.length - s.body.length) > 3) {
-            interp.body = s.body.map(pt => ({ x: pt.x, y: pt.y }));
+          // Decoded length for comparison: server sends every Nth segment
+          const step = s.bodyStep || 1;
+          const decodedLen = (s.body ? s.body.length : 0) * step;
+          if (Math.abs(interp.body.length - decodedLen) > 4) {
+            interp.body = this._decodeBody(s.body);
           }
         }
       }

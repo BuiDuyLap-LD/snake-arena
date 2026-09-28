@@ -724,6 +724,7 @@ class GameClient {
     if (msg.powerups) {
       this.powerups = msg.powerups;
     }
+    // If msg.powerups is absent, we keep the existing this.powerups (delta-only broadcast)
 
     this.renderer.syncServerSnakes(msg.snakes);
 

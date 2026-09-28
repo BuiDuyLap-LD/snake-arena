@@ -20,18 +20,23 @@ class GameRoom {
     this.nextBotId = 1;
 
     // Match round system
-    this.roundDuration = 180; // 3 minutes per round
+    this.roundDuration = 600; // 10 minutes per round
     this.timeRemaining = this.roundDuration;
     this.isIntermission = false;
     this.intermissionDuration = 8;
     this.intermissionTimer = 0;
 
-    // Tick loop (50 Hz physics)
+    // Tick loop: physics at 50 Hz, broadcast at 20 Hz (every 2-3 ticks)
     this.tickRate = 50;
     this.tickIntervalMs = 1000 / this.tickRate;
     this.lastTickTime = Date.now();
     this.running = false;
     this.broadcastTickCount = 0;
+    this.BROADCAST_EVERY_N = 3; // Broadcast 1 out of every 3 physics ticks (~16-17 Hz)
+
+    // Powerup dirty flag: only broadcast when changed
+    this.powerupsDirty = true;
+    this.lastPowerupsJson = '';
 
     // Colors available for bots
     this.botColors = [
@@ -246,9 +251,11 @@ class GameRoom {
     // Check Collisions with Shield Protection
     this.checkCollisions(allSnakes);
 
-    // Broadcast snapshot
+    // Broadcast snapshot (throttled to reduce network usage)
     this.broadcastTickCount++;
-    this.broadcastSnapshot(allSnakes);
+    if (this.broadcastTickCount % this.BROADCAST_EVERY_N === 0) {
+      this.broadcastSnapshot(allSnakes);
+    }
   }
 
   checkCollisions(snakes) {
@@ -435,8 +442,16 @@ class GameRoom {
       isBot: s.isBot,
     }));
 
-    const snakesData = allSnakes.map(s => s.getSnapshot());
+    const snakesData = allSnakes.map(s => s.getSnapshotCompressed());
     const foodDelta = this.foodManager.getDelta();
+
+    // Only include powerups when they changed (dirty flag)
+    let powerupsPayload = undefined;
+    const currentPowerupsJson = JSON.stringify(this.powerupManager.getAllPowerups());
+    if (currentPowerupsJson !== this.lastPowerupsJson) {
+      this.lastPowerupsJson = currentPowerupsJson;
+      powerupsPayload = JSON.parse(currentPowerupsJson);
+    }
 
     const snapshot = {
       type: 'GAME_TICK',
@@ -447,8 +462,11 @@ class GameRoom {
       snakes: snakesData,
       foodAdded: foodDelta.added,
       foodEaten: foodDelta.eaten,
-      powerups: this.powerupManager.getAllPowerups(),
     };
+
+    if (powerupsPayload !== undefined) {
+      snapshot.powerups = powerupsPayload;
+    }
 
     this.broadcast(snapshot);
   }

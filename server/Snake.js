@@ -334,6 +334,42 @@ class Snake {
       },
     };
   }
+
+  // Compressed snapshot for network broadcast: samples every 2nd body segment
+  // and uses short keys to minimize JSON payload size (~40-50% smaller body data)
+  getSnapshotCompressed() {
+    // Sample body: every 2nd segment (visual quality preserved, half the data)
+    const bodyStep = 2;
+    const bodyCompressed = [];
+    for (let i = 0; i < this.body.length; i += bodyStep) {
+      const s = this.body[i];
+      bodyCompressed.push([Math.round(s.x), Math.round(s.y)]);
+    }
+
+    return {
+      id: this.id,
+      name: this.name,
+      color: this.color,
+      isBot: this.isBot,
+      alive: this.alive,
+      score: this.score,
+      kills: this.kills,
+      radius: this.radius,
+      head: { x: Math.round(this.head.x), y: Math.round(this.head.y) },
+      angle: Number(this.angle.toFixed(2)),
+      isBoosting: this.isBoosting,
+      shield: this.shieldTimer > 0,
+      length: this.body.length,
+      body: bodyCompressed,   // Array of [x, y] pairs (compressed)
+      bodyStep,               // Client uses this to know the sampling stride
+      inventory: { ...this.inventory },
+      activeEffects: {
+        nitro: Number(this.activeEffects.nitro.toFixed(1)),
+        vision: Number(this.activeEffects.vision.toFixed(1)),
+        magnet: Number(this.activeEffects.magnet.toFixed(1)),
+      },
+    };
+  }
 }
 
 module.exports = Snake;
