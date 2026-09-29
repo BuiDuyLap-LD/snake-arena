@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: snake-arena
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/status
+    autoDeployTrigger: commit
