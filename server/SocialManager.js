@@ -1,6 +1,6 @@
 // server/SocialManager.js
 
-const accountManager = require('./AccountManager');
+const accountManager = require("./AccountManager");
 
 class SocialManager {
   constructor() {
@@ -10,14 +10,14 @@ class SocialManager {
     // Global lobby chat (max 60 messages)
     this.lobbyChat = [
       {
-        id: 'msg_sys_1',
-        sender: 'Hệ Thống 🛡️',
-        senderTier: 'Quản Trị',
-        senderSkin: '#00f0ff',
+        id: "msg_sys_1",
+        sender: "Hệ Thống 🛡️",
+        senderTier: "Quản Trị",
+        senderSkin: "#00f0ff",
         isGuest: false,
-        text: 'Chào mừng các dũng sĩ đến với Đấu Trường Snake Arena 5v5! Hãy kết bạn và lập đội săn mồi ngay!',
+        text: "Chào mừng các dũng sĩ đến với Đấu Trường Snake Arena 5v5! Hãy kết bạn và lập đội săn mồi ngay!",
         time: Date.now(),
-      }
+      },
     ];
 
     // Private chats: pairKey -> Array of messages (max 50)
@@ -25,7 +25,7 @@ class SocialManager {
   }
 
   getPairKey(u1, u2) {
-    return [u1.toLowerCase(), u2.toLowerCase()].sort().join(':');
+    return [u1.toLowerCase(), u2.toLowerCase()].sort().join(":");
   }
 
   registerSocket(socketId, ws) {
@@ -34,12 +34,12 @@ class SocialManager {
       ws,
       username: null,
       isGuest: true,
-      status: 'lobby',
-      room: 'ARENA-5V5',
+      status: "lobby",
+      room: "ARENA-5V5",
     });
   }
 
-  authenticateSocket(socketId, token, guestName = 'Snake') {
+  authenticateSocket(socketId, token, guestName = "Snake") {
     const entry = this.sockets.get(socketId);
     if (!entry) return null;
 
@@ -70,14 +70,14 @@ class SocialManager {
       // Notify friends that user is online
       this.notifyFriendsPresence(user.username, entry.status);
     } else {
-      entry.username = guestName || 'Khách';
+      entry.username = guestName || "Khách";
       entry.isGuest = true;
     }
 
     return user;
   }
 
-  setSocketStatus(socketId, status, room = 'ARENA-5V5') {
+  setSocketStatus(socketId, status, room = "ARENA-5V5") {
     const entry = this.sockets.get(socketId);
     if (!entry) return;
     entry.status = status;
@@ -100,7 +100,7 @@ class SocialManager {
         if (set.size === 0) {
           this.userSockets.delete(key);
           // Notify friends that user went offline
-          this.notifyFriendsPresence(entry.username, 'offline');
+          this.notifyFriendsPresence(entry.username, "offline");
         }
       }
     }
@@ -109,18 +109,18 @@ class SocialManager {
   }
 
   getUserStatus(username) {
-    if (!username) return 'offline';
+    if (!username) return "offline";
     const key = username.toLowerCase();
     const set = this.userSockets.get(key);
-    if (!set || set.size === 0) return 'offline';
+    if (!set || set.size === 0) return "offline";
 
     for (const sId of set) {
       const s = this.sockets.get(sId);
       if (s) {
-        if (s.status === 'in_game') return 'in_game';
+        if (s.status === "in_game") return "in_game";
       }
     }
-    return 'online';
+    return "online";
   }
 
   getOnlinePlayerCount() {
@@ -132,7 +132,7 @@ class SocialManager {
       try {
         ws.send(JSON.stringify(data));
       } catch (e) {
-        console.error('[SocialManager] send error:', e);
+        console.error("[SocialManager] send error:", e);
       }
     }
   }
@@ -164,9 +164,14 @@ class SocialManager {
 
     for (const fName of raw.friends) {
       this.sendToUser(fName, {
-        type: 'FRIEND_PRESENCE_UPDATE',
+        type: "FRIEND_PRESENCE_UPDATE",
         friendName: username,
-        status: status === 'in_game' ? 'in_game' : (status === 'offline' ? 'offline' : 'online'),
+        status:
+          status === "in_game"
+            ? "in_game"
+            : status === "offline"
+              ? "offline"
+              : "online",
       });
     }
   }
@@ -176,7 +181,10 @@ class SocialManager {
   sendFriendRequest(socketId, toUsername) {
     const entry = this.sockets.get(socketId);
     if (!entry || entry.isGuest || !entry.username) {
-      return { success: false, error: 'Bạn cần đăng nhập tài khoản cố định để kết bạn!' };
+      return {
+        success: false,
+        error: "Bạn cần đăng nhập tài khoản cố định để kết bạn!",
+      };
     }
 
     const result = accountManager.sendFriendRequest(entry.username, toUsername);
@@ -188,7 +196,7 @@ class SocialManager {
         myProfile.status = entry.status;
 
         this.sendToUser(toUsername, {
-          type: 'FRIEND_REQUEST_ACCEPTED',
+          type: "FRIEND_REQUEST_ACCEPTED",
           message: `Dũng sĩ ${entry.username} đã trở thành bạn bè với bạn!`,
           friend: myProfile,
         });
@@ -199,10 +207,10 @@ class SocialManager {
         // Send real-time request to recipient
         const myRaw = accountManager.getRawUser(entry.username);
         this.sendToUser(toUsername, {
-          type: 'FRIEND_REQUEST_RECEIVED',
+          type: "FRIEND_REQUEST_RECEIVED",
           from: entry.username,
-          tier: myRaw ? myRaw.tier : 'Đồng 🥉',
-          skin: myRaw ? myRaw.skin : '#00f0ff',
+          tier: myRaw ? myRaw.tier : "Đồng 🥉",
+          skin: myRaw ? myRaw.skin : "#00f0ff",
           highScore: myRaw ? myRaw.highScore : 0,
           totalKills: myRaw ? myRaw.totalKills : 0,
           time: Date.now(),
@@ -216,10 +224,14 @@ class SocialManager {
   respondFriendRequest(socketId, fromUsername, accept = true) {
     const entry = this.sockets.get(socketId);
     if (!entry || entry.isGuest || !entry.username) {
-      return { success: false, error: 'Chưa đăng nhập' };
+      return { success: false, error: "Chưa đăng nhập" };
     }
 
-    const result = accountManager.respondFriendRequest(entry.username, fromUsername, accept);
+    const result = accountManager.respondFriendRequest(
+      entry.username,
+      fromUsername,
+      accept,
+    );
     if (result.success && accept) {
       const myRaw = accountManager.getRawUser(entry.username);
       const myProfile = accountManager.sanitize(myRaw);
@@ -227,7 +239,7 @@ class SocialManager {
 
       // Notify the requester that friend request was accepted
       this.sendToUser(fromUsername, {
-        type: 'FRIEND_REQUEST_ACCEPTED',
+        type: "FRIEND_REQUEST_ACCEPTED",
         message: `${entry.username} đã chấp nhận lời mời kết bạn của bạn!`,
         friend: myProfile,
       });
@@ -243,13 +255,13 @@ class SocialManager {
   removeFriend(socketId, friendUsername) {
     const entry = this.sockets.get(socketId);
     if (!entry || entry.isGuest || !entry.username) {
-      return { success: false, error: 'Chưa đăng nhập' };
+      return { success: false, error: "Chưa đăng nhập" };
     }
 
     const result = accountManager.removeFriend(entry.username, friendUsername);
     if (result.success) {
       this.sendToUser(friendUsername, {
-        type: 'FRIEND_REMOVED',
+        type: "FRIEND_REMOVED",
         friendName: entry.username,
       });
     }
@@ -260,26 +272,30 @@ class SocialManager {
 
   sendChatMessage(socketId, data = {}) {
     const entry = this.sockets.get(socketId);
-    if (!entry) return { success: false, error: 'Kết nối không hợp lệ' };
+    if (!entry) return { success: false, error: "Kết nối không hợp lệ" };
 
     const to = data.to || null;
-    const text = data.text || '';
-    const chatType = data.typeChat || data.chatType || data.target || (to ? 'private' : 'lobby');
+    const text = data.text || "";
+    const chatType =
+      data.typeChat ||
+      data.chatType ||
+      data.target ||
+      (to ? "private" : "lobby");
 
     const cleanText = text.trim();
     if (!cleanText || cleanText.length > 200) {
-      return { success: false, error: 'Tin nhắn không hợp lệ (1-200 ký tự)' };
+      return { success: false, error: "Tin nhắn không hợp lệ (1-200 ký tự)" };
     }
 
-    const senderName = entry.username || 'Khách';
-    let senderTier = 'Tân Binh';
-    let senderSkin = '#00f0ff';
+    const senderName = entry.username || "Khách";
+    let senderTier = "Tân Binh";
+    let senderSkin = "#00f0ff";
 
     if (!entry.isGuest) {
       const user = accountManager.getRawUser(senderName);
       if (user) {
-        senderTier = user.tier || 'Đồng 🥉';
-        senderSkin = user.skin || '#00f0ff';
+        senderTier = user.tier || "Đồng 🥉";
+        senderSkin = user.skin || "#00f0ff";
       }
     }
 
@@ -293,24 +309,27 @@ class SocialManager {
       time: Date.now(),
     };
 
-    if (chatType === 'lobby') {
+    if (chatType === "lobby") {
       this.lobbyChat.push(msgObj);
       if (this.lobbyChat.length > 60) this.lobbyChat.shift();
 
       this.broadcastLobby({
-        type: 'LOBBY_CHAT_MESSAGE',
+        type: "LOBBY_CHAT_MESSAGE",
         message: msgObj,
       });
 
       return { success: true, message: msgObj };
-    } else if (chatType === 'private' && to) {
+    } else if (chatType === "private" && to) {
       if (entry.isGuest) {
-        return { success: false, error: 'Bạn cần đăng nhập để nhắn tin riêng với bạn bè!' };
+        return {
+          success: false,
+          error: "Bạn cần đăng nhập để nhắn tin riêng với bạn bè!",
+        };
       }
 
       const toUser = accountManager.getRawUser(to);
       if (!toUser) {
-        return { success: false, error: 'Người nhận không tồn tại' };
+        return { success: false, error: "Người nhận không tồn tại" };
       }
 
       const pairKey = this.getPairKey(senderName, to);
@@ -329,20 +348,20 @@ class SocialManager {
 
       // Send to recipient
       this.sendToUser(toUser.username, {
-        type: 'PRIVATE_CHAT_MESSAGE',
+        type: "PRIVATE_CHAT_MESSAGE",
         message: privateMsgObj,
       });
 
       // Send back to sender sockets
       this.sendToUser(senderName, {
-        type: 'PRIVATE_CHAT_MESSAGE',
+        type: "PRIVATE_CHAT_MESSAGE",
         message: privateMsgObj,
       });
 
       return { success: true, message: privateMsgObj };
     }
 
-    return { success: false, error: 'Loại tin nhắn không hợp lệ' };
+    return { success: false, error: "Loại tin nhắn không hợp lệ" };
   }
 
   getPrivateChatHistory(username1, username2) {
@@ -357,32 +376,41 @@ class SocialManager {
 
   // ================= SOCIAL INTERACTIONS =================
 
-  inviteFriendToGame(socketId, toUsername, roomCode = 'ARENA-5V5') {
+  inviteFriendToGame(
+    socketId,
+    toUsername,
+    roomCode = "ARENA-5V5",
+    mode = "ranked",
+  ) {
     const entry = this.sockets.get(socketId);
-    if (!entry) return { success: false, error: 'Chưa kết nối' };
+    if (!entry) return { success: false, error: "Chưa kết nối" };
 
-    const senderName = entry.username || 'Bạn bè';
+    const senderName = entry.username || "Bạn bè";
     const raw = entry.isGuest ? null : accountManager.getRawUser(senderName);
 
     this.sendToUser(toUsername, {
-      type: 'ROOM_INVITE',
+      type: "ROOM_INVITE",
       from: senderName,
-      fromTier: raw ? raw.tier : 'Đồng 🥉',
-      fromSkin: raw ? raw.skin : '#00f0ff',
-      roomCode: roomCode || entry.room || 'ARENA-5V5',
+      fromTier: raw ? raw.tier : "Đồng 🥉",
+      fromSkin: raw ? raw.skin : "#00f0ff",
+      roomCode: roomCode || entry.room || "ARENA-5V5",
+      mode: mode === "casual" ? "casual" : "ranked",
       time: Date.now(),
     });
 
-    return { success: true, message: `Đã gửi lời mời tham gia phòng tới ${toUsername}!` };
+    return {
+      success: true,
+      message: `Đã gửi lời mời tham gia phòng tới ${toUsername}!`,
+    };
   }
 
   pokeFriend(socketId, toUsername) {
     const entry = this.sockets.get(socketId);
-    if (!entry) return { success: false, error: 'Chưa kết nối' };
+    if (!entry) return { success: false, error: "Chưa kết nối" };
 
-    const senderName = entry.username || 'Chiến binh';
+    const senderName = entry.username || "Chiến binh";
     this.sendToUser(toUsername, {
-      type: 'FRIEND_POKED',
+      type: "FRIEND_POKED",
       from: senderName,
       time: Date.now(),
     });
@@ -392,16 +420,19 @@ class SocialManager {
 
   commendPlayer(socketId, targetName) {
     const entry = this.sockets.get(socketId);
-    if (!entry) return { success: false, error: 'Chưa kết nối' };
+    if (!entry) return { success: false, error: "Chưa kết nối" };
 
-    const senderName = entry.username || 'Đồng đội';
+    const senderName = entry.username || "Đồng đội";
     this.sendToUser(targetName, {
-      type: 'PLAYER_COMMENDED',
+      type: "PLAYER_COMMENDED",
       from: senderName,
       time: Date.now(),
     });
 
-    return { success: true, message: `Đã gửi lời khen ngợi tới ${targetName}! ❤️` };
+    return {
+      success: true,
+      message: `Đã gửi lời khen ngợi tới ${targetName}! ❤️`,
+    };
   }
 }
 

@@ -1,20 +1,21 @@
 // server/GameRoom.js
 
-const Snake = require('./Snake');
-const FoodManager = require('./FoodManager');
-const PowerupManager = require('./PowerupManager');
-const leaderboardManager = require('./LeaderboardManager');
-const accountManager = require('./AccountManager');
+const Snake = require("./Snake");
+const FoodManager = require("./FoodManager");
+const PowerupManager = require("./PowerupManager");
+const leaderboardManager = require("./LeaderboardManager");
+const accountManager = require("./AccountManager");
 
 class GameRoom {
-  constructor(roomId = 'arena-main') {
+  constructor(roomId = "arena-main", options = {}) {
     this.roomId = roomId;
+    this.recordStats = options.recordStats !== false;
     this.arenaRadius = 2200;
     this.foodManager = new FoodManager(this.arenaRadius, 500);
     this.powerupManager = new PowerupManager(this.arenaRadius, 14);
 
     this.players = new Map(); // ws/id -> { ws, snake }
-    this.bots = new Map();    // botId -> snake
+    this.bots = new Map(); // botId -> snake
 
     this.targetBotCount = 6;
     this.nextBotId = 1;
@@ -37,12 +38,18 @@ class GameRoom {
 
     // Powerup dirty flag: only broadcast when changed
     this.powerupsDirty = true;
-    this.lastPowerupsJson = '';
+    this.lastPowerupsJson = "";
 
     // Colors available for bots
     this.botColors = [
-      '#ff3366', '#33ccff', '#ffaa00', '#00ffaa', 
-      '#cc33ff', '#ffff33', '#ff0055', '#00e5ff'
+      "#ff3366",
+      "#33ccff",
+      "#ffaa00",
+      "#00ffaa",
+      "#cc33ff",
+      "#ffff33",
+      "#ff0055",
+      "#00e5ff",
     ];
 
     // Maintain initial bots
@@ -96,19 +103,29 @@ class GameRoom {
       }
     }
 
-    const initialAngle = Math.atan2(-bestPos.y, -bestPos.x) + (Math.random() - 0.5) * 0.5;
+    const initialAngle =
+      Math.atan2(-bestPos.y, -bestPos.x) + (Math.random() - 0.5) * 0.5;
     return { pos: bestPos, angle: initialAngle };
   }
 
   ensureBots() {
-    const needed = Math.max(0, this.targetBotCount - this.players.size) - this.bots.size;
+    const needed =
+      Math.max(0, this.targetBotCount - this.players.size) - this.bots.size;
     const allSnakes = this.getAllSnakes();
 
     for (let i = 0; i < needed; i++) {
       const botId = `bot_${this.nextBotId++}`;
-      const color = this.botColors[Math.floor(Math.random() * this.botColors.length)];
+      const color =
+        this.botColors[Math.floor(Math.random() * this.botColors.length)];
       const { pos, angle } = this.findSafeSpawn(allSnakes);
-      const bot = new Snake(botId, `Bot #${Math.floor(Math.random() * 900 + 100)}`, color, true, pos, angle);
+      const bot = new Snake(
+        botId,
+        `Bot #${Math.floor(Math.random() * 900 + 100)}`,
+        color,
+        true,
+        pos,
+        angle,
+      );
       this.bots.set(botId, bot);
       allSnakes.push(bot);
     }
@@ -119,7 +136,9 @@ class GameRoom {
     this.running = true;
     this.lastTickTime = Date.now();
     this.loopInterval = setInterval(() => this.tick(), this.tickIntervalMs);
-    console.log(`[GameRoom] Room ${this.roomId} started at ${this.tickRate}Hz.`);
+    console.log(
+      `[GameRoom] Room ${this.roomId} started at ${this.tickRate}Hz.`,
+    );
   }
 
   stop() {
@@ -129,11 +148,18 @@ class GameRoom {
 
   addPlayer(ws, playerId, playerName, playerColor, accountUsername = null) {
     const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
-    const snake = new Snake(playerId, playerName, playerColor, false, pos, angle);
+    const snake = new Snake(
+      playerId,
+      playerName,
+      playerColor,
+      false,
+      pos,
+      angle,
+    );
     this.players.set(playerId, { ws, snake, accountUsername });
 
     this.sendTo(ws, {
-      type: 'INIT_GAME',
+      type: "INIT_GAME",
       playerId,
       arenaRadius: this.arenaRadius,
       roundDuration: this.roundDuration,
@@ -142,24 +168,28 @@ class GameRoom {
       powerups: this.powerupManager.getAllPowerups(),
     });
 
-    const accInfo = accountUsername ? ` [Tài khoản: ${accountUsername}]` : ' [Khách]';
-    console.log(`[GameRoom] Player joined: ${playerName} (${playerId})${accInfo} at (${pos.x}, ${pos.y}).`);
+    const accInfo = accountUsername
+      ? ` [Tài khoản: ${accountUsername}]`
+      : " [Khách]";
+    console.log(
+      `[GameRoom] Player joined: ${playerName} (${playerId})${accInfo} at (${pos.x}, ${pos.y}).`,
+    );
   }
 
   removePlayer(playerId) {
     const player = this.players.get(playerId);
     if (player) {
       if (player.snake && player.snake.alive) {
-        this.foodManager.spawnDeadSnakeFood(player.snake.body, player.snake.color);
-        // Ghi stats theo accountUsername (nếu có tài khoản) hoặc theo tên hiển thị
-        const statsTarget = player.accountUsername || player.snake.name;
-        leaderboardManager.recordPlayerScore(statsTarget, player.snake.score, player.snake.kills);
-        if (player.accountUsername) {
-          accountManager.recordGameStats(player.accountUsername, player.snake.score, player.snake.kills);
-        }
+        this.foodManager.spawnDeadSnakeFood(
+          player.snake.body,
+          player.snake.color,
+        );
+        this.recordPlayerStats(player);
       }
       this.players.delete(playerId);
-      console.log(`[GameRoom] Player left: ${playerId}. Remaining: ${this.players.size}`);
+      console.log(
+        `[GameRoom] Player left: ${playerId}. Remaining: ${this.players.size}`,
+      );
       this.ensureBots();
     }
   }
@@ -168,17 +198,20 @@ class GameRoom {
     const player = this.players.get(playerId);
     if (!player || !player.snake || !player.snake.alive) return;
 
-    if (typeof inputData.angle === 'number') {
+    if (typeof inputData.angle === "number") {
       player.snake.setTargetAngle(inputData.angle);
     }
-    if (typeof inputData.boosting === 'boolean') {
+    if (typeof inputData.boosting === "boolean") {
       player.snake.setBoosting(inputData.boosting);
     }
-    if (inputData.type === 'USE_POWERUP' && typeof inputData.powerup === 'string') {
+    if (
+      inputData.type === "USE_POWERUP" &&
+      typeof inputData.powerup === "string"
+    ) {
       const success = player.snake.usePowerup(inputData.powerup);
       if (success) {
         this.sendTo(player.ws, {
-          type: 'POWERUP_ACTIVATED',
+          type: "POWERUP_ACTIVATED",
           powerup: inputData.powerup,
         });
       }
@@ -191,16 +224,36 @@ class GameRoom {
 
     // Ghi stats cũ trước khi tái sinh
     if (player.snake) {
-      const statsTarget = player.accountUsername || player.snake.name;
-      leaderboardManager.recordPlayerScore(statsTarget, player.snake.score, player.snake.kills);
-      if (player.accountUsername) {
-        accountManager.recordGameStats(player.accountUsername, player.snake.score, player.snake.kills);
-      }
+      this.recordPlayerStats(player);
     }
 
     const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
-    player.snake = new Snake(playerId, player.snake.name, player.snake.color, false, pos, angle);
-    console.log(`[GameRoom] Player respawned at (${pos.x}, ${pos.y}) with 3s shield.`);
+    player.snake = new Snake(
+      playerId,
+      player.snake.name,
+      player.snake.color,
+      false,
+      pos,
+      angle,
+    );
+    console.log(
+      `[GameRoom] Player respawned at (${pos.x}, ${pos.y}) with 3s shield.`,
+    );
+  }
+
+  recordPlayerStats(player, score, kills) {
+    if (!this.recordStats) return;
+    const finalScore = score ?? player.snake.score;
+    const finalKills = kills ?? player.snake.kills;
+    const statsTarget = player.accountUsername || player.snake.name;
+    leaderboardManager.recordPlayerScore(statsTarget, finalScore, finalKills);
+    if (player.accountUsername) {
+      accountManager.recordGameStats(
+        player.accountUsername,
+        finalScore,
+        finalKills,
+      );
+    }
   }
 
   tick() {
@@ -226,9 +279,19 @@ class GameRoom {
     // Update positions and handle boost pellets
     for (const snake of allSnakes) {
       if (!snake.alive) continue;
-      const pellet = snake.update(dt, this.arenaRadius, Array.from(this.foodManager.foods.values()), allSnakes);
+      const pellet = snake.update(
+        dt,
+        this.arenaRadius,
+        Array.from(this.foodManager.foods.values()),
+        allSnakes,
+      );
       if (pellet) {
-        this.foodManager.addPellet(pellet.x, pellet.y, pellet.value, pellet.color);
+        this.foodManager.addPellet(
+          pellet.x,
+          pellet.y,
+          pellet.value,
+          pellet.color,
+        );
       }
 
       this.foodManager.checkHeadCollisions(snake);
@@ -241,7 +304,7 @@ class GameRoom {
         const p = this.players.get(c.snakeId);
         if (p && p.ws) {
           this.sendTo(p.ws, {
-            type: 'POWERUP_COLLECTED',
+            type: "POWERUP_COLLECTED",
             powerup: c.type,
             added: c.added,
           });
@@ -270,7 +333,7 @@ class GameRoom {
       const distFromCenter = Math.hypot(s1.head.x, s1.head.y);
       if (distFromCenter >= this.arenaRadius - s1.radius) {
         if (!s1.isShielded()) {
-          this.eliminateSnake(s1, null, 'va vào hàng rào năng lượng');
+          this.eliminateSnake(s1, null, "va vào hàng rào năng lượng");
           continue;
         } else {
           s1.head.x *= 0.98;
@@ -314,13 +377,13 @@ class GameRoom {
 
     if (killEvents.length > 0) {
       this.broadcast({
-        type: 'KILL_EVENTS',
+        type: "KILL_EVENTS",
         events: killEvents,
       });
     }
   }
 
-  eliminateSnake(victim, killer = null, reason = '') {
+  eliminateSnake(victim, killer = null, reason = "") {
     if (!victim.alive) return;
     victim.alive = false;
 
@@ -328,21 +391,13 @@ class GameRoom {
     if (!victim.isBot) {
       // Tìm player entry để lấy accountUsername
       const victimPlayer = this.players.get(victim.id);
-      const victimAccount = victimPlayer ? victimPlayer.accountUsername : null;
-      const victimTarget = victimAccount || victim.name;
-      leaderboardManager.recordPlayerScore(victimTarget, victim.score, victim.kills);
-      if (victimAccount) {
-        accountManager.recordGameStats(victimAccount, victim.score, victim.kills);
-      }
+      if (victimPlayer)
+        this.recordPlayerStats(victimPlayer, victim.score, victim.kills);
     }
     if (killer && !killer.isBot) {
       const killerPlayer = this.players.get(killer.id);
-      const killerAccount = killerPlayer ? killerPlayer.accountUsername : null;
-      const killerTarget = killerAccount || killer.name;
-      leaderboardManager.recordPlayerScore(killerTarget, killer.score, killer.kills);
-      if (killerAccount) {
-        accountManager.recordGameStats(killerAccount, killer.score, killer.kills);
-      }
+      if (killerPlayer)
+        this.recordPlayerStats(killerPlayer, killer.score, killer.kills);
     }
 
     this.foodManager.spawnDeadSnakeFood(victim.body, victim.color);
@@ -359,8 +414,8 @@ class GameRoom {
     const playerEntry = this.players.get(victim.id);
     if (playerEntry && playerEntry.ws) {
       this.sendTo(playerEntry.ws, {
-        type: 'YOU_DIED',
-        killerName: killer ? killer.name : 'Hàng rào năng lượng',
+        type: "YOU_DIED",
+        killerName: killer ? killer.name : "Hàng rào năng lượng",
         score: victim.score,
         kills: victim.kills,
         reason,
@@ -379,12 +434,7 @@ class GameRoom {
     for (const s of allSnakes) {
       if (!s.isBot) {
         const playerEntry = this.players.get(s.id);
-        const accountUsr = playerEntry ? playerEntry.accountUsername : null;
-        const target = accountUsr || s.name;
-        leaderboardManager.recordPlayerScore(target, s.score, s.kills);
-        if (accountUsr) {
-          accountManager.recordGameStats(accountUsr, s.score, s.kills);
-        }
+        if (playerEntry) this.recordPlayerStats(playerEntry, s.score, s.kills);
       }
     }
 
@@ -400,12 +450,14 @@ class GameRoom {
     }));
 
     this.broadcast({
-      type: 'MATCH_OVER',
+      type: "MATCH_OVER",
       rankings: rankings,
       intermissionDuration: this.intermissionDuration,
     });
 
-    console.log(`[GameRoom] Match over! Winner: ${rankings[0] ? rankings[0].name : 'None'}`);
+    console.log(
+      `[GameRoom] Match over! Winner: ${rankings[0] ? rankings[0].name : "None"}`,
+    );
   }
 
   startNewRound() {
@@ -417,14 +469,21 @@ class GameRoom {
     const allSnakes = [];
     for (const [id, player] of this.players.entries()) {
       const { pos, angle } = this.findSafeSpawn(allSnakes);
-      player.snake = new Snake(id, player.snake.name, player.snake.color, false, pos, angle);
+      player.snake = new Snake(
+        id,
+        player.snake.name,
+        player.snake.color,
+        false,
+        pos,
+        angle,
+      );
       allSnakes.push(player.snake);
     }
     this.bots.clear();
     this.ensureBots();
 
     this.broadcast({
-      type: 'MATCH_STARTED',
+      type: "MATCH_STARTED",
       roundDuration: this.roundDuration,
       foods: this.foodManager.getAllFoods(),
       powerups: this.powerupManager.getAllPowerups(),
@@ -444,19 +503,21 @@ class GameRoom {
     }));
 
     // Use full snapshot (no body compression) to prevent visual drift / invisible deaths
-    const snakesData = allSnakes.map(s => s.getSnapshot());
+    const snakesData = allSnakes.map((s) => s.getSnapshot());
     const foodDelta = this.foodManager.getDelta();
 
     // Only include powerups when they changed (dirty flag) — saves bandwidth
     let powerupsPayload = undefined;
-    const currentPowerupsJson = JSON.stringify(this.powerupManager.getAllPowerups());
+    const currentPowerupsJson = JSON.stringify(
+      this.powerupManager.getAllPowerups(),
+    );
     if (currentPowerupsJson !== this.lastPowerupsJson) {
       this.lastPowerupsJson = currentPowerupsJson;
       powerupsPayload = JSON.parse(currentPowerupsJson);
     }
 
     const snapshot = {
-      type: 'GAME_TICK',
+      type: "GAME_TICK",
       timeRemaining: Math.max(0, Math.ceil(this.timeRemaining)),
       isIntermission: this.isIntermission,
       intermissionTimer: Math.ceil(this.intermissionTimer),
