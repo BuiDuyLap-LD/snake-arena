@@ -216,6 +216,37 @@ html {
   line-height: 1;
 }
 
+.app-version-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 190, 11, 0.35);
+  background: rgba(255, 190, 11, 0.08);
+  color: #ffe18a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-version-banner .version-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(255, 190, 11, 0.12);
+}
+
+.app-version-banner .version-meta {
+  color: #f9d77a;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
 .online-indicator {
   display: flex;
   align-items: center;
@@ -717,6 +748,231 @@ html {
 .btn-refresh-icon:hover {
   transform: rotate(180deg);
   color: var(--primary-cyan);
+}
+
+.progression-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  margin: 0 0 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(20, 33, 52, 0.92), rgba(7, 14, 24, 0.9));
+  border: 1px solid rgba(0, 240, 255, 0.18);
+}
+
+.progression-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progression-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.progression-header h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.btn-shop-pill {
+  border: 1px solid rgba(255, 190, 11, 0.4);
+  background: rgba(255, 190, 11, 0.12);
+  color: #ffe18a;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.account-level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 240, 255, 0.12);
+  color: var(--primary-cyan);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.xp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.xp-bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #00f0ff, #00ff88, #ffbe0b);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
+}
+
+.currency-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.currency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 11px;
+}
+
+.shop-modal-card {
+  width: min(820px, 92vw);
+  max-height: 84vh;
+  overflow: auto;
+}
+
+.shop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.shop-tag {
+  display: inline-block;
+  margin-bottom: 5px;
+  color: #ffbe0b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.shop-header h3 {
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.shop-wallet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.shop-item-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(7, 14, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shop-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.shop-item-badge {
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.shop-item-badge.basic { background: rgba(148, 163, 184, 0.18); color: #dfe8f5; }
+.shop-item-badge.rare { background: rgba(0, 240, 255, 0.12); color: var(--primary-cyan); }
+.shop-item-badge.epic { background: rgba(189, 0, 255, 0.12); color: #d2a3ff; }
+
+.shop-item-type {
+  color: #d4d9e1;
+}
+
+.shop-item-name {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.shop-item-bonus {
+  color: var(--neon-green);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shop-item-desc {
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-size: 12px;
+}
+
+.shop-item-price {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #f9d77a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.btn-buy-item {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary-cyan), #8ef7ff);
+  color: #061017;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.btn-buy-item:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: not-allowed;
 }
 
 /* Snake Live Preview Box */

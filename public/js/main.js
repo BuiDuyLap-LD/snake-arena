@@ -47,6 +47,45 @@ class GameClient {
 
     // Career stats
     this.careerStats = this.loadCareerStats();
+    this.playerProgress = this.loadPlayerProgress();
+    this.shopCatalog = [
+      {
+        id: "starter-cyan",
+        name: "Neon Cyan",
+        type: "skin",
+        rarity: "BASIC",
+        price: { coins: 120 },
+        bonus: "+2% Speed",
+        description: "Rắn nhanh nhẹn, nhẹ như tia điện.",
+      },
+      {
+        id: "blaze-red",
+        name: "Crimson Blaze",
+        type: "skin",
+        rarity: "RARE",
+        price: { coins: 220, shards: 2 },
+        bonus: "+3% Boost",
+        description: "Tăng hiệu ứng boost trong trận đấu.",
+      },
+      {
+        id: "trail-fire",
+        name: "Trail Fire",
+        type: "trail",
+        rarity: "RARE",
+        price: { coins: 180 },
+        bonus: "Trail lửa",
+        description: "Hiệu ứng đuôi lửa khi chiến đấu.",
+      },
+      {
+        id: "booster-pack",
+        name: "Booster Pack",
+        type: "utility",
+        rarity: "EPIC",
+        price: { coins: 260, tickets: 1 },
+        bonus: "+1 Booster",
+        description: "Mở khóa gói tăng tốc cho trận tiếp theo.",
+      },
+    ];
 
     this.initDOM();
     this.initRenderer();
@@ -64,6 +103,189 @@ class GameClient {
       console.warn("Could not read career stats:", e);
     }
     return { highScore: 0, totalKills: 0, matchesPlayed: 0 };
+  }
+
+  loadPlayerProgress() {
+    try {
+      const data = localStorage.getItem("snake_player_progress");
+      if (data) {
+        const parsed = JSON.parse(data);
+        return {
+          level: parsed.level || 1,
+          xp: parsed.xp || 0,
+          coins: parsed.coins || 250,
+          shards: parsed.shards || 12,
+          tickets: parsed.tickets || 3,
+          ownedItems: parsed.ownedItems || ["starter-cyan"],
+          seasonXp: parsed.seasonXp || 0,
+        };
+      }
+    } catch (e) {
+      console.warn("Could not read player progress:", e);
+    }
+    return {
+      level: 1,
+      xp: 0,
+      coins: 250,
+      shards: 12,
+      tickets: 3,
+      ownedItems: ["starter-cyan"],
+      seasonXp: 0,
+    };
+  }
+
+  savePlayerProgress() {
+    try {
+      localStorage.setItem(
+        "snake_player_progress",
+        JSON.stringify(this.playerProgress),
+      );
+    } catch (e) {
+      console.warn("Could not save player progress:", e);
+    }
+  }
+
+  getLevelTarget(level = this.playerProgress.level) {
+    return 100 + (level - 1) * 45;
+  }
+
+  getCurrentTierName() {
+    if (this.playerProgress.level >= 20) return "👑 Thách Đấu";
+    if (this.playerProgress.level >= 12) return "💎 Kim Cương";
+    if (this.playerProgress.level >= 7) return "🥇 Vàng";
+    if (this.playerProgress.level >= 3) return "🥈 Bạc";
+    return "🥉 Đồng";
+  }
+
+  renderPlayerProgress() {
+    const level = this.playerProgress.level || 1;
+    const xp = this.playerProgress.xp || 0;
+    const target = this.getLevelTarget(level);
+    const percent = Math.min(100, (xp / target) * 100);
+
+    if (this.accountLevelBadge) {
+      this.accountLevelBadge.textContent = `Lv. ${level}`;
+    }
+    if (this.accountXpText) {
+      this.accountXpText.textContent = `${xp} / ${target} XP`;
+    }
+    if (this.accountRankText) {
+      this.accountRankText.textContent = `Hạng: ${this.getCurrentTierName()}`;
+    }
+    if (this.accountXpBar) {
+      this.accountXpBar.style.width = `${percent}%`;
+    }
+    if (this.currencyCoins) {
+      this.currencyCoins.textContent = String(this.playerProgress.coins || 0);
+    }
+    if (this.currencyShards) {
+      this.currencyShards.textContent = String(this.playerProgress.shards || 0);
+    }
+    if (this.currencyTickets) {
+      this.currencyTickets.textContent = String(this.playerProgress.tickets || 0);
+    }
+    if (this.shopCoins) {
+      this.shopCoins.textContent = String(this.playerProgress.coins || 0);
+    }
+    if (this.shopShards) {
+      this.shopShards.textContent = String(this.playerProgress.shards || 0);
+    }
+    if (this.shopTickets) {
+      this.shopTickets.textContent = String(this.playerProgress.tickets || 0);
+    }
+
+    if (this.myTierBadge) {
+      this.myTierBadge.textContent = this.getCurrentTierName();
+    }
+  }
+
+  addPlayerXp(amount) {
+    if (!amount) return;
+    this.playerProgress.xp += amount;
+    while (this.playerProgress.xp >= this.getLevelTarget(this.playerProgress.level)) {
+      this.playerProgress.xp -= this.getLevelTarget(this.playerProgress.level);
+      this.playerProgress.level += 1;
+    }
+    this.savePlayerProgress();
+    this.renderPlayerProgress();
+  }
+
+  buyShopItem(itemId) {
+    const item = this.shopCatalog.find((entry) => entry.id === itemId);
+    if (!item) return;
+    if (this.playerProgress.ownedItems.includes(itemId)) {
+      this.showToast(`🧩 ${item.name} đã có trong bộ sưu tập.`);
+      return;
+    }
+    const totalCost =
+      (item.price.coins || 0) +
+      (item.price.shards || 0) * 30 +
+      (item.price.tickets || 0) * 50;
+    const walletValue =
+      this.playerProgress.coins +
+      this.playerProgress.shards * 30 +
+      this.playerProgress.tickets * 50;
+
+    if (walletValue < totalCost) {
+      this.showToast("⚠️ Không đủ tài nguyên để mua vật phẩm này.");
+      return;
+    }
+
+    this.playerProgress.coins -= item.price.coins || 0;
+    this.playerProgress.shards -= item.price.shards || 0;
+    this.playerProgress.tickets -= item.price.tickets || 0;
+    this.playerProgress.ownedItems.push(itemId);
+    this.playerProgress.seasonXp += 20;
+    this.addPlayerXp(25);
+    this.savePlayerProgress();
+    this.renderPlayerProgress();
+    this.renderShopItems();
+    this.showToast(`✅ Đã mua ${item.name}!`);
+  }
+
+  renderShopItems() {
+    if (!this.shopGrid) return;
+    this.shopGrid.innerHTML = "";
+    this.shopCatalog.forEach((item) => {
+      const owned = this.playerProgress.ownedItems.includes(item.id);
+      const card = document.createElement("div");
+      card.className = "shop-item-card";
+      card.innerHTML = `
+        <div class="shop-item-top">
+          <span class="shop-item-badge ${item.rarity.toLowerCase()}">${item.rarity}</span>
+          <span class="shop-item-type">${item.type}</span>
+        </div>
+        <div class="shop-item-name">${item.name}</div>
+        <div class="shop-item-bonus">${item.bonus}</div>
+        <p class="shop-item-desc">${item.description}</p>
+        <div class="shop-item-price">
+          <span>🪙 ${item.price.coins || 0}</span>
+          <span>💎 ${item.price.shards || 0}</span>
+          <span>🎫 ${item.price.tickets || 0}</span>
+        </div>
+        <button class="btn-buy-item" data-item-id="${item.id}" ${owned ? "disabled" : ""}>
+          ${owned ? "Đã sở hữu" : "Mua ngay"}
+        </button>
+      `;
+      this.shopGrid.appendChild(card);
+    });
+
+    this.shopGrid.querySelectorAll(".btn-buy-item").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.buyShopItem(button.dataset.itemId);
+      });
+    });
+  }
+
+  openShopModal() {
+    if (!this.modalShop) return;
+    this.renderShopItems();
+    this.renderPlayerProgress();
+    this.modalShop.classList.remove("hidden");
+  }
+
+  closeShopModal() {
+    if (this.modalShop) this.modalShop.classList.add("hidden");
   }
 
   saveCareerStats(score = 0, kills = 0) {
@@ -113,6 +335,7 @@ class GameClient {
     this.modalSoloRoom = document.getElementById("modal-solo-room");
     this.modalAuth = document.getElementById("modal-auth");
     this.modalFriends = document.getElementById("modal-friends");
+    this.modalShop = document.getElementById("modal-shop");
     this.modalProfileCard = document.getElementById("modal-profile-card");
     this.invitePromptBox = document.getElementById("invite-prompt-box");
     this.toastContainer = document.getElementById("toast-container");
@@ -120,6 +343,19 @@ class GameClient {
     // Lobby Elements
     this.inputName = document.getElementById("player-name");
     this.btnJoin = document.getElementById("btn-join");
+    this.btnOpenShop = document.getElementById("btn-open-shop");
+    this.btnCloseShop = document.getElementById("btn-close-shop");
+    this.shopGrid = document.getElementById("shop-grid");
+    this.currencyCoins = document.getElementById("currency-coins");
+    this.currencyShards = document.getElementById("currency-shards");
+    this.currencyTickets = document.getElementById("currency-tickets");
+    this.accountLevelBadge = document.getElementById("account-level-badge");
+    this.accountXpText = document.getElementById("account-xp-text");
+    this.accountRankText = document.getElementById("account-rank-text");
+    this.accountXpBar = document.getElementById("account-xp-bar");
+    this.shopCoins = document.getElementById("shop-coins");
+    this.shopShards = document.getElementById("shop-shards");
+    this.shopTickets = document.getElementById("shop-tickets");
     this.modeSolo5v5 = document.getElementById("mode-solo5v5");
     this.soloRoomEntry = document.getElementById("solo-room-entry");
     this.inputSoloRoomCode = document.getElementById("input-solo-room-code");
@@ -651,6 +887,8 @@ class GameClient {
     if (this.myMatchesCountEl)
       this.myMatchesCountEl.textContent = stats.matchesPlayed.toLocaleString();
     if (this.myTierBadge) this.myTierBadge.textContent = stats.tier;
+
+    this.renderPlayerProgress();
   }
 
   updateAvatarPreview() {
@@ -2751,6 +2989,13 @@ class GameClient {
     }
 
     // Auth events
+    if (this.btnOpenShop) {
+      this.btnOpenShop.addEventListener("click", () => this.openShopModal());
+    }
+    if (this.btnCloseShop) {
+      this.btnCloseShop.addEventListener("click", () => this.closeShopModal());
+    }
+
     if (this.btnOpenAuth)
       this.btnOpenAuth.addEventListener("click", () =>
         this.openAuthModal("login"),

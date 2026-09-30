@@ -6,7 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Multiplayer Snake Arena 5v5 - Đấu Trường Rắn Săn Mồi Cực Đỉnh</title>
+    <title>
+      Multiplayer Snake Arena 5v5 - Đấu Trường Rắn Săn Mồi Cực Đỉnh dev by
+      duylap
+    </title>
     <meta
       name="description"
       content="Game rắn săn mồi 2D nhiều người chơi trực tuyến với tài khoản cố định lưu vĩnh viễn Rank, kỹ năng cường hóa, và bảng rank toàn cầu!"
@@ -37,6 +40,10 @@
             </div>
           </div>
           <div class="lobby-header-actions">
+            <div class="app-version-banner" aria-label="Phiên bản hiện tại">
+              <span class="version-tag">v1.0</span>
+              <span class="version-meta">DEV by DuyLap</span>
+            </div>
             <div class="online-indicator">
               <span class="online-dot"></span>
               <span id="lobby-online-count">Trực tuyến: 1 người chơi</span>
@@ -136,6 +143,35 @@
                 <strong id="link-create-acc">Tạo tài khoản cố định</strong> để
                 bảo lưu vĩnh viễn Rank & Kỷ Lục!</span
               >
+            </div>
+
+            <div class="progression-panel">
+              <div class="progression-header">
+                <div>
+                  <span class="progression-kicker">Season 1</span>
+                  <h3>Neon Arena</h3>
+                </div>
+                <button id="btn-open-shop" class="btn-shop-pill" type="button">
+                  🛒 Shop
+                </button>
+              </div>
+
+              <div class="account-level-row">
+                <div class="level-badge" id="account-level-badge">Lv. 1</div>
+                <div class="xp-meta">
+                  <span id="account-xp-text">0 / 100 XP</span>
+                  <span id="account-rank-text">Hạng: Đồng</span>
+                </div>
+              </div>
+              <div class="xp-bar-track">
+                <div id="account-xp-bar" class="xp-bar-fill"></div>
+              </div>
+
+              <div class="currency-row">
+                <div class="currency-chip"><span>🪙</span><strong id="currency-coins">250</strong></div>
+                <div class="currency-chip"><span>💎</span><strong id="currency-shards">12</strong></div>
+                <div class="currency-chip"><span>🎫</span><strong id="currency-tickets">3</strong></div>
+              </div>
             </div>
 
             <!-- Name Input -->
@@ -265,7 +301,11 @@
                   placeholder="Mã phòng, ví dụ 5V5-A1B2C3"
                   autocomplete="off"
                 />
-                <button id="btn-solo-room-join" class="btn-secondary" type="button">
+                <button
+                  id="btn-solo-room-join"
+                  class="btn-secondary"
+                  type="button"
+                >
                   Vào phòng
                 </button>
               </div>
@@ -799,14 +839,21 @@
             <button id="btn-solo-room-copy" class="btn-secondary" type="button">
               Sao chép link
             </button>
-            <button id="btn-solo-room-invite" class="btn-primary-play" type="button">
+            <button
+              id="btn-solo-room-invite"
+              class="btn-primary-play"
+              type="button"
+            >
               Mời bạn bè
             </button>
           </div>
         </div>
 
         <div class="solo-team-grid">
-          <section class="solo-team-card red-team" aria-labelledby="red-team-title">
+          <section
+            class="solo-team-card red-team"
+            aria-labelledby="red-team-title"
+          >
             <header>
               <div>
                 <span class="team-side-label">PHE 01</span>
@@ -815,14 +862,21 @@
               <span id="solo-red-count" class="team-count">0 / 5</span>
             </header>
             <div id="solo-red-roster" class="solo-roster"></div>
-            <button id="btn-solo-team-red" class="team-pick-button" type="button">
+            <button
+              id="btn-solo-team-red"
+              class="team-pick-button"
+              type="button"
+            >
               Chọn Đội Đỏ
             </button>
           </section>
 
           <div class="solo-versus" aria-hidden="true">VS</div>
 
-          <section class="solo-team-card blue-team" aria-labelledby="blue-team-title">
+          <section
+            class="solo-team-card blue-team"
+            aria-labelledby="blue-team-title"
+          >
             <header>
               <div>
                 <span class="team-side-label">PHE 02</span>
@@ -831,7 +885,11 @@
               <span id="solo-blue-count" class="team-count">0 / 5</span>
             </header>
             <div id="solo-blue-roster" class="solo-roster"></div>
-            <button id="btn-solo-team-blue" class="team-pick-button" type="button">
+            <button
+              id="btn-solo-team-blue"
+              class="team-pick-button"
+              type="button"
+            >
               Chọn Đội Xanh
             </button>
           </section>
@@ -841,7 +899,12 @@
           <p id="solo-room-status" role="status">
             Cần ít nhất 2 người ở mỗi đội để bắt đầu.
           </p>
-          <button id="btn-solo-room-start" class="solo-start-button" type="button" disabled>
+          <button
+            id="btn-solo-room-start"
+            class="solo-start-button"
+            type="button"
+            disabled
+          >
             Bắt đầu trận
           </button>
         </footer>
@@ -1017,6 +1080,27 @@
             <button type="submit" class="btn-chat-send">Gửi 💬</button>
           </form>
         </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: PLAYER SHOP ================= -->
+    <div id="modal-shop" class="modal-overlay hidden">
+      <div class="modal-content shop-modal-card">
+        <button id="btn-close-shop" class="modal-close-btn" title="Đóng">
+          ✕
+        </button>
+        <div class="shop-header">
+          <div>
+            <span class="shop-tag">Shop</span>
+            <h3>Neon Market</h3>
+          </div>
+          <div class="shop-wallet">
+            <span>🪙 <strong id="shop-coins">250</strong></span>
+            <span>💎 <strong id="shop-shards">12</strong></span>
+            <span>🎫 <strong id="shop-tickets">3</strong></span>
+          </div>
+        </div>
+        <div class="shop-grid" id="shop-grid"></div>
       </div>
     </div>
 
