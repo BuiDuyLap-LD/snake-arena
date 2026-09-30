@@ -555,6 +555,7 @@ html {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   cursor: pointer;
+  overflow: hidden;
   transition:
     border-color 0.18s,
     background 0.18s,
@@ -598,23 +599,31 @@ html {
   display: grid;
   gap: 2px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .mode-card-copy strong {
   font-size: 13px;
   line-height: 1.2;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .mode-card-copy small {
   color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .mode-card-tag {
+  justify-self: end;
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.6px;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .ranked-tag {
@@ -721,6 +730,7 @@ html {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
 }
 
 .snake-avatar-head {
