@@ -1,6 +1,17 @@
 // public/js/main.js
 
 class GameClient {
+  static EMOTE_CATALOG = [
+    { id: "emote-wave", name: "Vẫy tay", icon: "👋", unlockLevel: 1 },
+    { id: "emote-heart", name: "Thả tim", icon: "💖", unlockLevel: 2 },
+    { id: "emote-laugh", name: "Cười lớn", icon: "😂", unlockLevel: 3 },
+    { id: "emote-fire", name: "Bùng cháy", icon: "🔥", unlockLevel: 4 },
+    { id: "emote-star", name: "Tỏa sáng", icon: "⭐", unlockLevel: 6 },
+    { id: "emote-cry", name: "Khóc nhè", icon: "😭", unlockLevel: 8 },
+    { id: "emote-crown", name: "Vương miện", icon: "👑", unlockLevel: 10 },
+    { id: "emote-gg", name: "GG!", icon: "🎉", unlockLevel: 12 },
+  ];
+
   constructor() {
     this.ws = null;
     this.localPlayerId = null;
@@ -55,12 +66,15 @@ class GameClient {
     // Career stats
     this.careerStats = this.loadCareerStats();
     this.playerProgress = this.loadPlayerProgress();
+    this.shopCategory = "all";
     this.shopCatalog = [
       {
         id: "starter-cyan",
         name: "Neon Cyan",
         type: "skin",
         icon: "🟦",
+        color: "#00f0ff",
+        category: "skins",
         rarity: "BASIC",
         price: { coins: 120 },
         bonus: "+2% Speed",
@@ -72,6 +86,8 @@ class GameClient {
         name: "Crimson Blaze",
         type: "skin",
         icon: "🔴",
+        color: "#ff3355",
+        category: "skins",
         rarity: "RARE",
         price: { coins: 220, shards: 2 },
         bonus: "+3% Boost",
@@ -83,10 +99,11 @@ class GameClient {
         name: "Trail Fire",
         type: "trail",
         icon: "🔥",
+        category: "trails",
         rarity: "RARE",
         price: { coins: 180 },
-        bonus: "Trail lửa",
-        description: "Hiệu ứng đuôi lửa khi chiến đấu.",
+        bonus: "Mẫu vệt lửa",
+        description: "Mẫu vệt lửa trang trí trong bộ sưu tập đấu trường.",
         stats: { speed: 1, boost: 1, magnet: 2, shield: 1 },
       },
       {
@@ -94,13 +111,215 @@ class GameClient {
         name: "Booster Pack",
         type: "utility",
         icon: "⚡",
+        category: "boosts",
         rarity: "EPIC",
         price: { coins: 260, tickets: 1 },
-        bonus: "+1 Booster",
-        description: "Mở khóa gói tăng tốc cho trận tiếp theo.",
+        bonus: "Bộ sưu tập boost",
+        description: "Linh kiện boost phiên bản giới hạn để bổ sung bộ sưu tập.",
         stats: { speed: 0, boost: 2, magnet: 1, shield: 1 },
       },
+      {
+        id: "emerald-boost",
+        name: "Emerald Rush",
+        type: "skin",
+        icon: "🟢",
+        color: "#35e58b",
+        category: "skins",
+        rarity: "RARE",
+        price: { coins: 280 },
+        bonus: "+3% Magnet",
+        description: "Lớp vảy lục bảo dành cho tay săn mồi lì lợm.",
+        stats: { speed: 1, boost: 1, magnet: 3, shield: 0 },
+      },
+      {
+        id: "solar-gold",
+        name: "Solar Crown",
+        type: "skin",
+        icon: "🌟",
+        color: "#ffc247",
+        category: "skins",
+        rarity: "EPIC",
+        price: { coins: 360, shards: 2 },
+        bonus: "+2% Boost · +2% Shield",
+        description: "Ánh vàng rực cháy giữa tâm điểm đấu trường.",
+        stats: { speed: 1, boost: 2, magnet: 0, shield: 2 },
+      },
+      {
+        id: "violet-arc",
+        name: "Arc Nebula",
+        type: "skin",
+        icon: "🟣",
+        color: "#c179ff",
+        category: "skins",
+        rarity: "EPIC",
+        price: { coins: 420, shards: 3 },
+        bonus: "+2% Speed · +1% Boost",
+        description: "Một vệt sáng lạ thường đến từ vùng không gian sâu.",
+        stats: { speed: 2, boost: 1, magnet: 1, shield: 1 },
+      },
+      {
+        id: "crimson-flare",
+        name: "Crimson Flare",
+        type: "skin",
+        icon: "🔺",
+        color: "#ff5b45",
+        category: "skins",
+        rarity: "LEGENDARY",
+        price: { coins: 520, shards: 4 },
+        bonus: "+3% Boost",
+        description: "Sắc đỏ huyền thoại, bùng lên trong từng pha tăng tốc.",
+        stats: { speed: 0, boost: 3, magnet: 1, shield: 1 },
+      },
+      {
+        id: "trail-comet",
+        name: "Comet Wake",
+        type: "trail",
+        icon: "☄️",
+        category: "trails",
+        rarity: "EPIC",
+        price: { coins: 300, shards: 1 },
+        bonus: "Vệt sao chổi",
+        description: "Dấu vết sao băng cho bộ sưu tập của bạn.",
+        stats: {},
+      },
+      {
+        id: "trail-prism",
+        name: "Prism Drift",
+        type: "trail",
+        icon: "💠",
+        category: "trails",
+        rarity: "RARE",
+        price: { coins: 240 },
+        bonus: "Vệt lăng kính",
+        description: "Sắc màu khúc xạ theo mỗi vòng lượn.",
+        stats: {},
+      },
+      {
+        id: "emote-wave",
+        name: "Wave Hello",
+        type: "emote",
+        icon: "👋",
+        category: "emotes",
+        rarity: "BASIC",
+        price: { coins: 90 },
+        bonus: "Biểu cảm khởi đầu · Lv. 1",
+        description: "Vẫy tay chào đối thủ và đồng đội trên đấu trường.",
+        stats: {},
+      },
+      {
+        id: "emote-crown",
+        name: "Victory Crown",
+        type: "emote",
+        icon: "👑",
+        category: "emotes",
+        rarity: "RARE",
+        price: { coins: 190 },
+        bonus: "Biểu cảm · mở khóa Lv. 10",
+        description: "Đội vương miện ăn mừng giữa trận đấu.",
+        stats: {},
+      },
+      {
+        id: "emote-gg",
+        name: "GG Spark",
+        type: "emote",
+        icon: "🎉",
+        category: "emotes",
+        rarity: "BASIC",
+        price: { coins: 100 },
+        bonus: "Biểu cảm · mở khóa Lv. 12",
+        description: "Gửi lời chúc mừng bằng pháo giấy rực rỡ.",
+        stats: {},
+      },
+      {
+        id: "emote-heart",
+        name: "Heart Pop",
+        type: "emote",
+        icon: "💖",
+        category: "emotes",
+        rarity: "BASIC",
+        price: { coins: 120 },
+        bonus: "Biểu cảm · mở khóa Lv. 2",
+        description: "Thả một trái tim nổi bật để đồng đội thấy.",
+        stats: {},
+      },
+      {
+        id: "emote-laugh",
+        name: "Laugh Riot",
+        type: "emote",
+        icon: "😂",
+        category: "emotes",
+        rarity: "BASIC",
+        price: { coins: 130 },
+        bonus: "Biểu cảm · mở khóa Lv. 3",
+        description: "Một tràng cười vui nhộn giữa giao tranh.",
+        stats: {},
+      },
+      {
+        id: "emote-fire",
+        name: "Flame On",
+        type: "emote",
+        icon: "🔥",
+        category: "emotes",
+        rarity: "RARE",
+        price: { coins: 170 },
+        bonus: "Biểu cảm · mở khóa Lv. 4",
+        description: "Bùng lửa cổ vũ khi trận đấu nóng lên.",
+        stats: {},
+      },
+      {
+        id: "emote-star",
+        name: "Starstruck",
+        type: "emote",
+        icon: "⭐",
+        category: "emotes",
+        rarity: "RARE",
+        price: { coins: 180 },
+        bonus: "Biểu cảm · mở khóa Lv. 6",
+        description: "Tỏa sáng để đánh dấu một pha xử lý đẹp.",
+        stats: {},
+      },
+      {
+        id: "emote-cry",
+        name: "Tiny Tears",
+        type: "emote",
+        icon: "😭",
+        category: "emotes",
+        rarity: "EPIC",
+        price: { coins: 210, shards: 1 },
+        bonus: "Biểu cảm · mở khóa Lv. 8",
+        description: "Khóc thật to sau một pha thoát thân sát nút.",
+        stats: {},
+      },
+      {
+        id: "boost-nitro",
+        name: "Nitro Cell",
+        type: "utility",
+        icon: "🧪",
+        category: "boosts",
+        rarity: "EPIC",
+        price: { coins: 280, tickets: 1 },
+        bonus: "Vật phẩm hỗ trợ",
+        description: "Linh kiện sưu tầm thuộc bộ Nitro của đấu trường.",
+        stats: {},
+      },
+      {
+        id: "boost-magnet",
+        name: "Magnet Core",
+        type: "utility",
+        icon: "🧲",
+        category: "boosts",
+        rarity: "RARE",
+        price: { coins: 230 },
+        bonus: "Vật phẩm hỗ trợ",
+        description: "Lõi từ tính trang trí cho bộ sưu tập của bạn.",
+        stats: {},
+      },
     ];
+    this.grantLevelEmotes(this.playerProgress.level);
+    const equippedShopSkin = this.shopCatalog.find(
+      (item) => item.id === this.playerProgress.equippedSkin && item.type === "skin",
+    );
+    if (equippedShopSkin) this.selectedColor = equippedShopSkin.color;
     this.skinStatMap = {
       "starter-cyan": { speed: 2, boost: 0, magnet: 1, shield: 0 },
       "blaze-red": { speed: 1, boost: 3, magnet: 0, shield: 1 },
@@ -150,6 +369,7 @@ class GameClient {
           shards: parsed.shards || 12,
           tickets: parsed.tickets || 3,
           ownedItems: parsed.ownedItems || ["starter-cyan"],
+          equippedEmotes: parsed.equippedEmotes || [],
           seasonXp: parsed.seasonXp || 0,
           battlePassXp: parsed.battlePassXp || 0,
           battlePassLevel: parsed.battlePassLevel || 1,
@@ -169,6 +389,7 @@ class GameClient {
       shards: 12,
       tickets: 3,
       ownedItems: ["starter-cyan"],
+      equippedEmotes: [],
       seasonXp: 0,
       battlePassXp: 0,
       battlePassLevel: 1,
@@ -331,12 +552,16 @@ class GameClient {
 
   addPlayerXp(amount) {
     if (!amount) return;
+    const previousLevel = this.playerProgress.level || 1;
     this.playerProgress.xp += amount;
     while (
       this.playerProgress.xp >= this.getLevelTarget(this.playerProgress.level)
     ) {
       this.playerProgress.xp -= this.getLevelTarget(this.playerProgress.level);
       this.playerProgress.level += 1;
+    }
+    if (this.playerProgress.level > previousLevel) {
+      this.grantLevelEmotes(this.playerProgress.level, true);
     }
     const xpBoost = Math.max(5, Math.floor(amount * 0.6));
     this.playerProgress.battlePassXp = (this.playerProgress.battlePassXp || 0) + xpBoost;
@@ -355,6 +580,97 @@ class GameClient {
     }
     this.savePlayerProgress();
     this.renderPlayerProgress();
+  }
+
+  getOwnedEmotes() {
+    const owned = new Set(this.playerProgress.ownedItems || []);
+    return GameClient.EMOTE_CATALOG.filter((emote) => owned.has(emote.id));
+  }
+
+  grantLevelEmotes(level, notify = false) {
+    const owned = new Set(this.playerProgress.ownedItems || []);
+    const unlocked = GameClient.EMOTE_CATALOG.filter(
+      (emote) => emote.unlockLevel <= level && !owned.has(emote.id),
+    );
+    unlocked.forEach((emote) => {
+      owned.add(emote.id);
+      this.playerProgress.ownedItems.push(emote.id);
+    });
+    const validIds = new Set(GameClient.EMOTE_CATALOG.map((emote) => emote.id));
+    const loadout = Array.isArray(this.playerProgress.equippedEmotes)
+      ? this.playerProgress.equippedEmotes
+      : [];
+    this.playerProgress.equippedEmotes = [...new Set(loadout)]
+      .filter((id) => validIds.has(id) && owned.has(id))
+      .slice(0, 4);
+    if (this.playerProgress.equippedEmotes.length === 0 && owned.has("emote-wave")) {
+      this.playerProgress.equippedEmotes = ["emote-wave"];
+    }
+    if (unlocked.length) {
+      this.savePlayerProgress();
+      if (notify) {
+        this.showToast(`🎭 Đã mở khóa: ${unlocked.map((emote) => emote.name).join(", ")}`);
+      }
+    }
+    this.renderEmoteLoadout();
+    this.renderEmoteHotbar();
+  }
+
+  setEmoteLoadout(slot, emoteId) {
+    const emote = GameClient.EMOTE_CATALOG.find((entry) => entry.id === emoteId);
+    if (emoteId && (!emote || !this.playerProgress.ownedItems.includes(emoteId))) return;
+    const loadout = [...this.playerProgress.equippedEmotes];
+    if (emoteId && loadout.some((equippedId, index) => index !== slot && equippedId === emoteId)) {
+      this.showToast("Biểu cảm này đã nằm trong một ô khác.");
+      this.renderEmoteLoadout();
+      return;
+    }
+    loadout[slot] = emoteId || "";
+    this.playerProgress.equippedEmotes = loadout.slice(0, 4);
+    this.savePlayerProgress();
+    this.renderEmoteLoadout();
+    this.renderEmoteHotbar();
+  }
+
+  renderEmoteLoadout() {
+    if (!this.emoteLoadout) return;
+    const ownedEmotes = this.getOwnedEmotes();
+    this.emoteLoadout.innerHTML = "";
+    for (let slot = 0; slot < 4; slot += 1) {
+      const selectedId = this.playerProgress.equippedEmotes?.[slot] || "";
+      const label = document.createElement("label");
+      label.className = "emote-loadout-slot";
+      label.innerHTML = `<span>Ô ${slot + 1}</span><select data-slot="${slot}" aria-label="Biểu cảm ô ${slot + 1}"><option value="">Trống</option>${ownedEmotes.map((emote) => `<option value="${emote.id}" ${emote.id === selectedId ? "selected" : ""}>${emote.icon} ${emote.name}</option>`).join("")}</select>`;
+      this.emoteLoadout.appendChild(label);
+    }
+    if (this.emoteLoadoutCount) {
+      const count = (this.playerProgress.equippedEmotes || []).filter(Boolean).length;
+      this.emoteLoadoutCount.textContent = `${count}/4`;
+    }
+  }
+
+  renderEmoteHotbar() {
+    if (!this.emoteHotbar) return;
+    this.emoteHotbar.innerHTML = "";
+    for (let slot = 0; slot < 4; slot += 1) {
+      const id = this.playerProgress.equippedEmotes?.[slot];
+      const emote = GameClient.EMOTE_CATALOG.find((entry) => entry.id === id);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "emote-hotbar-button hud-interactive";
+      button.dataset.emoteId = emote?.id || "";
+      button.disabled = !emote;
+      button.setAttribute("aria-label", emote ? `Dùng biểu cảm ${emote.name}` : `Ô biểu cảm ${slot + 1} trống`);
+      button.title = emote ? `${emote.name} · phím ${slot + 4}` : `Ô ${slot + 1} trống`;
+      button.innerHTML = `<span>${emote?.icon || "＋"}</span><kbd>${slot + 4}</kbd>`;
+      this.emoteHotbar.appendChild(button);
+    }
+  }
+
+  useEmote(emoteId) {
+    if (!emoteId || !this.playerProgress.equippedEmotes.includes(emoteId)) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.localPlayerId) return;
+    this.ws.send(JSON.stringify({ type: "USE_EMOTE", emoteId }));
   }
 
   renderBattlePassLevels() {
@@ -453,33 +769,84 @@ class GameClient {
     this.savePlayerProgress();
     this.renderPlayerProgress();
     this.renderShopItems();
+    this.renderEmoteLoadout();
     this.showToast(`✅ Đã mua ${item.name}!`);
+  }
+
+  toggleShopEmote(itemId) {
+    const loadout = [...this.playerProgress.equippedEmotes];
+    const equippedIndex = loadout.indexOf(itemId);
+    if (equippedIndex >= 0) {
+      loadout[equippedIndex] = "";
+    } else {
+      const emptySlot = loadout.findIndex((id) => !id);
+      if (emptySlot < 0) {
+        this.showToast("Đã trang bị đủ 4 biểu cảm. Hãy đổi ô ở sảnh.");
+        return;
+      }
+      loadout[emptySlot] = itemId;
+    }
+    this.playerProgress.equippedEmotes = loadout;
+    this.savePlayerProgress();
+    this.renderEmoteLoadout();
+    this.renderEmoteHotbar();
+    this.renderShopItems();
+  }
+
+  equipShopItem(itemId) {
+    const item = this.shopCatalog.find((entry) => entry.id === itemId);
+    if (!item || item.type !== "skin" || !this.playerProgress.ownedItems.includes(itemId)) return;
+    this.playerProgress.equippedSkin = itemId;
+    this.selectedColor = item.color || this.selectedColor;
+    this.savePlayerProgress();
+    this.renderSnakeStats();
+    this.updateAvatarPreview();
+    this.renderShopItems();
+    this.showToast(`✅ Đã trang bị ${item.name}!`);
   }
 
   renderShopItems() {
     if (!this.shopGrid) return;
     this.shopGrid.innerHTML = "";
-    this.shopCatalog.forEach((item) => {
+    const allCount = this.modalShop?.querySelector('[data-category="all"] span');
+    if (allCount) allCount.textContent = String(this.shopCatalog.length);
+    const items = this.shopCategory === "all"
+      ? this.shopCatalog
+      : this.shopCatalog.filter((item) => item.category === this.shopCategory);
+    items.forEach((item) => {
       const owned = this.playerProgress.ownedItems.includes(item.id);
       const affordable = this.canAffordItem(item);
+      const equipped = this.playerProgress.equippedSkin === item.id;
+      const emoteEquipped = this.playerProgress.equippedEmotes.includes(item.id);
+      const buttonLabel = item.type === "emote" && owned
+        ? emoteEquipped ? "Đang dùng · gỡ" : "Trang bị"
+        : item.type === "skin" && owned
+        ? equipped ? "Đang trang bị" : "Trang bị"
+        : owned ? "Đã sở hữu" : affordable ? "Mua vật phẩm" : "Thiếu tài nguyên";
+      const buttonAction = item.type === "emote" && owned
+        ? "emote"
+        : item.type === "skin" && owned ? "equip" : "buy";
+      const disabled = item.type === "emote" && owned
+        ? false
+        : item.type === "skin" && owned ? equipped : owned || !affordable;
       const card = document.createElement("div");
-      card.className = "shop-item-card";
+      card.className = `shop-item-card rarity-${item.rarity.toLowerCase()}`;
       card.innerHTML = `
         <div class="shop-item-top">
           <span class="shop-item-badge ${item.rarity.toLowerCase()}">${item.rarity}</span>
-          <span class="shop-item-type">${item.type}</span>
+          <span class="shop-item-type">${item.type === "skin" ? "Ngoại hình" : item.type === "trail" ? "Vệt sáng" : item.type === "emote" ? "Biểu cảm" : "Hỗ trợ"}</span>
         </div>
-        <div class="shop-item-icon" aria-hidden="true">${item.icon || "✨"}</div>
+        <div class="shop-item-art" style="--item-color: ${item.color || "#ffb84d"}" aria-hidden="true"><span>${item.icon || "✨"}</span></div>
         <div class="shop-item-name">${item.name}</div>
         <div class="shop-item-bonus">${item.bonus}</div>
         <p class="shop-item-desc">${item.description}</p>
         <div class="shop-item-price">
-          <span>🪙 ${item.price.coins || 0}</span>
-          <span>💎 ${item.price.shards || 0}</span>
-          <span>🎫 ${item.price.tickets || 0}</span>
+          ${item.price.coins ? `<span>🪙 ${item.price.coins}</span>` : ""}
+          ${item.price.shards ? `<span>💎 ${item.price.shards}</span>` : ""}
+          ${item.price.tickets ? `<span>🎫 ${item.price.tickets}</span>` : ""}
         </div>
-        <button class="btn-buy-item" data-item-id="${item.id}" ${owned || !affordable ? "disabled" : ""}>
-          ${owned ? "Đã sở hữu" : !affordable ? "Thiếu tài nguyên" : "Mua ngay"}
+        <button class="btn-buy-item" data-action="${buttonAction}" data-item-id="${item.id}" ${disabled ? "disabled" : ""}>
+          ${buttonLabel}
         </button>
       `;
       this.shopGrid.appendChild(card);
@@ -487,9 +854,21 @@ class GameClient {
 
     this.shopGrid.querySelectorAll(".btn-buy-item").forEach((button) => {
       button.addEventListener("click", () => {
-        this.buyShopItem(button.dataset.itemId);
+        if (button.dataset.action === "emote") this.toggleShopEmote(button.dataset.itemId);
+        else if (button.dataset.action === "equip") this.equipShopItem(button.dataset.itemId);
+        else this.buyShopItem(button.dataset.itemId);
       });
     });
+  }
+
+  setShopCategory(category) {
+    this.shopCategory = category;
+    this.modalShop?.querySelectorAll(".shop-category-button").forEach((button) => {
+      const active = button.dataset.category === category;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    this.renderShopItems();
   }
 
   openShopModal() {
@@ -583,6 +962,9 @@ class GameClient {
     this.btnJoin = document.getElementById("btn-join");
     this.btnOpenShop = document.getElementById("btn-open-shop");
     this.btnCloseShop = document.getElementById("btn-close-shop");
+    this.btnEmoteShop = document.getElementById("btn-emote-shop");
+    this.emoteLoadout = document.getElementById("emote-loadout");
+    this.emoteLoadoutCount = document.getElementById("emote-loadout-count");
     this.shopGrid = document.getElementById("shop-grid");
     this.currencyCoins = document.getElementById("currency-coins");
     this.currencyShards = document.getElementById("currency-shards");
@@ -691,6 +1073,7 @@ class GameClient {
 
     // Power-up Skill Hotbar
     this.btnSkillNitro = document.getElementById("btn-skill-nitro");
+    this.emoteHotbar = document.getElementById("emote-hotbar");
     this.btnSkillVision = document.getElementById("btn-skill-vision");
     this.btnSkillMagnet = document.getElementById("btn-skill-magnet");
     this.stockNitro = document.getElementById("stock-nitro");
@@ -844,6 +1227,8 @@ class GameClient {
 
     this.updateCareerUI();
     this.updateAvatarPreview();
+    this.renderEmoteLoadout();
+    this.renderEmoteHotbar();
     if (this.currentUser) {
       this.connectWebSocket();
     }
@@ -1304,6 +1689,10 @@ class GameClient {
         this.updateGameState(msg);
         break;
 
+      case "PLAYER_EMOTE":
+        this.renderer.showEmote(msg.playerId, msg.emoteId, msg.duration);
+        break;
+
       case "YOU_DIED":
         window.soundEngine.playDeath();
         if (this.activeGameMode === "ranked") {
@@ -1531,7 +1920,7 @@ class GameClient {
 
     if (
       (boostChanged || angleDiff > 0.03) &&
-      now - this.lastInputSendTime >= 20
+      now - this.lastInputSendTime >= 40
     ) {
       this.lastInputSendTime = now;
       this.lastSentInput.angle = this.currentInput.angle;
@@ -2935,6 +3324,12 @@ class GameClient {
 
   openAuthModal(mode = "login") {
     this.authMode = mode;
+    if (this.authInputPassword) {
+      this.authInputPassword.autocomplete = mode === "register" ? "new-password" : "current-password";
+      this.authInputPassword.placeholder = mode === "register"
+        ? "Tạo mật khẩu từ 12 đến 128 ký tự..."
+        : "Nhập mật khẩu (12 đến 128 ký tự)...";
+    }
     this.tabLogin.classList.toggle("active", mode === "login");
     this.tabRegister.classList.toggle("active", mode === "register");
     this.btnSubmitAuth.textContent =
@@ -3252,6 +3647,20 @@ class GameClient {
         this.usePowerup("magnet"),
       );
 
+    this.emoteLoadout?.addEventListener("change", (event) => {
+      const select = event.target.closest("select[data-slot]");
+      if (select) this.setEmoteLoadout(Number(select.dataset.slot), select.value);
+    });
+    this.emoteHotbar?.addEventListener("click", (event) => {
+      const button = event.target.closest(".emote-hotbar-button");
+      if (button && !button.disabled) this.useEmote(button.dataset.emoteId);
+    });
+    window.addEventListener("keydown", (event) => {
+      if (event.repeat || !this.localPlayerId || !/^[4-7]$/.test(event.key)) return;
+      if (event.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
+      this.useEmote(this.playerProgress.equippedEmotes[Number(event.key) - 4]);
+    });
+
     if (this.btnTouchBoost) {
       const startBoost = (e) => {
         if (e.cancelable) e.preventDefault();
@@ -3281,9 +3690,18 @@ class GameClient {
     if (this.btnOpenShop) {
       this.btnOpenShop.addEventListener("click", () => this.openShopModal());
     }
+    if (this.btnEmoteShop) {
+      this.btnEmoteShop.addEventListener("click", () => {
+        this.setShopCategory("emotes");
+        this.openShopModal();
+      });
+    }
     if (this.btnCloseShop) {
       this.btnCloseShop.addEventListener("click", () => this.closeShopModal());
     }
+    this.modalShop?.querySelectorAll(".shop-category-button").forEach((button) => {
+      button.addEventListener("click", () => this.setShopCategory(button.dataset.category));
+    });
     if (this.btnBattlePassPremium) {
       this.btnBattlePassPremium.addEventListener("click", () => {
         this.playerProgress.premiumPass = !this.playerProgress.premiumPass;

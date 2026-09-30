@@ -7,6 +7,17 @@ const leaderboardManager = require("./LeaderboardManager");
 const accountManager = require("./AccountManager");
 
 class GameRoom {
+  static EMOTE_IDS = new Set([
+    "emote-wave",
+    "emote-heart",
+    "emote-laugh",
+    "emote-fire",
+    "emote-star",
+    "emote-crown",
+    "emote-gg",
+    "emote-cry",
+  ]);
+
   static MAP_PRESETS = {
     "neon-grid": {
       id: "neon-grid",
@@ -49,6 +60,7 @@ class GameRoom {
 
     this.players = new Map(); // ws/id -> { ws, snake }
     this.bots = new Map(); // botId -> snake
+    this.emoteCooldowns = new Map();
 
     this.targetBotCount = 6;
     this.nextBotId = 1;
@@ -257,6 +269,7 @@ class GameRoom {
   removePlayer(playerId) {
     const player = this.players.get(playerId);
     if (player) {
+      this.emoteCooldowns.delete(playerId);
       if (player.snake && player.snake.alive) {
         this.foodManager.spawnDeadSnakeFood(
           player.snake.body,
@@ -294,6 +307,26 @@ class GameRoom {
         });
       }
     }
+  }
+
+  sendPlayerEmote(playerId, emoteId, now = Date.now()) {
+    const player = this.players.get(playerId);
+    if (
+      !player?.snake?.alive ||
+      !GameRoom.EMOTE_IDS.has(emoteId) ||
+      now - (this.emoteCooldowns.get(playerId) || 0) < 1200
+    ) {
+      return false;
+    }
+
+    this.emoteCooldowns.set(playerId, now);
+    this.broadcast({
+      type: "PLAYER_EMOTE",
+      playerId,
+      emoteId,
+      duration: 1800,
+    });
+    return true;
   }
 
   respawnPlayer(playerId) {
@@ -637,8 +670,7 @@ class GameRoom {
       isBot: s.isBot,
     }));
 
-    // Use full snapshot (no body compression) to prevent visual drift / invisible deaths
-    const snakesData = allSnakes.map((s) => s.getSnapshot());
+    const snakesData = allSnakes.map((s) => s.getSnapshotCompressed());
     const foodDelta = this.foodManager.getDelta();
 
     // Only include powerups when they changed (dirty flag) — saves bandwidth

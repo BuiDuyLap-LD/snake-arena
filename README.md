@@ -8,6 +8,7 @@ Dự án game **Rắn Săn Mồi Nhiều Người Chơi 2D (Multiplayer Snake Ar
 
 1. **Kiến Trúc Server-Authoritative (Node.js + WebSockets)**:
    - Server tính toán toàn bộ logic vật lý (50 Hz), broadcast ở 25 Hz: vị trí, góc xoay, tăng tốc (boost), ăn mồi, va chạm và điểm số.
+   - Body rắn gửi mẫu cách một segment và được client nội suy lại; gói điều hướng giới hạn 25 Hz. Lệnh WebSocket và JSON đầu vào giới hạn 16 KiB để giảm lưu lượng và chặn payload bất thường.
    - Chống gian lận (anti-cheat), đồng bộ thời gian thực mượt mà cho 2-4+ người chơi qua mạng LAN hoặc Internet.
 
 2. **Cơ Chế Gameplay Sinh Tồn Gay Cấn**:
@@ -35,6 +36,10 @@ Dự án game **Rắn Săn Mồi Nhiều Người Chơi 2D (Multiplayer Snake Ar
 7. **Cân bằng v1.0**:
    - Mật độ thức ăn giữa bốn map được chuẩn hóa; Sunfire Arena có sân nhỏ hơn nên nhịp chạm trán dày hơn, Ash Maze có nhiều không gian chạy hơn.
    - Nitro kéo dài 3 giây ở 1.9x tốc độ cơ bản, không tiêu hao chiều dài; boost thường nhanh 330 đơn vị/giây nhưng có thể tiêu hao chiều dài.
+
+8. **Biểu Cảm Trong Trận**:
+   - Nhận biểu cảm khi lên cấp, mua thêm trong Shop, chọn tối đa 4 ô ở sảnh và dùng bằng phím `4`–`7` hoặc nút cảm ứng.
+   - Biểu cảm được broadcast theo sự kiện riêng trong phòng, hiện ngắn phía trên rắn; không được lặp trong snapshot gameplay.
 
 ---
 
@@ -70,13 +75,13 @@ Free Web Service có thể spin down sau 15 phút không có traffic và cần k
 
 1. Tạo project Supabase Free, mở **SQL Editor**, rồi chạy nội dung [`supabase/schema.sql`](supabase/schema.sql).
 2. Blueprint khai báo hai biến môi trường dưới dạng secret không đồng bộ vào Git. Nếu cấu hình service thủ công, thêm `SUPABASE_URL` (Project URL) và `SUPABASE_SERVICE_ROLE_KEY` (secret key phía server).
-3. Mặc định, lần khởi động đầu với database trống sẽ tạo tài liệu người dùng rỗng và leaderboard mẫu. Chỉ đặt `SUPABASE_IMPORT_LOCAL_JSON=true` nếu đã rà soát dữ liệu local và thực sự muốn nhập `server/data/*.json`; quá trình này xóa token phiên đã lưu, người chơi cần đăng nhập lại. Sau khi hai tài liệu được tạo, gỡ biến import.
+3. Mặc định, lần khởi động đầu với database trống sẽ tạo tài liệu người dùng rỗng và leaderboard mẫu. Không import `server/data/users.json` cũ; tài khoản dùng hash yếu đời trước sẽ bị xóa khi chạy production. `SUPABASE_IMPORT_LOCAL_JSON` không còn phù hợp cho dữ liệu credential cũ.
 
 Server chỉ lưu snapshots của tài khoản và leaderboard vào bảng `game_documents`; game loop, bot, presence và trạng thái trận vẫn ở RAM. Supabase là nguồn dữ liệu chính khi đã cấu hình. Gói Free có giới hạn dung lượng/egress và có thể pause project sau một thời gian không hoạt động; xem [bảng giá Supabase](https://supabase.com/pricing).
 
-**Bảo mật dữ liệu cũ:** `server/data/users.json` đang được Git theo dõi và đã có bản ghi trong lịch sử repository public. Cờ import chỉ xóa token phiên; nó không xóa password hash khỏi Git history. Hãy xem xét reset mật khẩu người chơi và dọn dữ liệu nhạy cảm khỏi repository trước khi coi các tài khoản cũ là an toàn.
+**Bảo mật dữ liệu cũ:** `server/data/users.json` từng được Git theo dõi và đã xuất hiện trong lịch sử repository public. Runtime JSON hiện được ignore, nhưng các commit cũ vẫn chứa password hash và session token. Hãy coi thông tin đăng nhập cũ là đã lộ, vô hiệu hóa session, reset tài khoản và dọn toàn bộ lịch sử Git trước khi chia sẻ repository/deploy.
 
-**Lưu ý trước production v1.0:** mật khẩu tài khoản cũ đang dùng SHA-256 với salt tĩnh, mật khẩu mới hiện chỉ cần 3 ký tự, và hash cũ đã xuất hiện trong Git history. Reset mật khẩu hiện có, dọn lịch sử nhạy cảm, nâng mức yêu cầu mật khẩu và chuyển sang password hashing chậm với salt riêng trước khi mở đăng ký công khai. Shop, tiền tệ, Battle Pass và cấp rắn hiện lưu trong `localStorage` trên từng trình duyệt, không phải dữ liệu tài khoản đồng bộ/server-authoritative; không coi các chỉ số này là lợi thế gameplay hoặc giá trị mua bán trong ranked.
+**Xác thực production:** mật khẩu mới yêu cầu 12–128 ký tự và lưu bằng scrypt với salt riêng. Hash cũ không được migrate; production chủ động reset account database nếu còn credential legacy, người chơi phải đăng ký lại. Session token chỉ lưu trong RAM và không được ghi vào JSON/Supabase. Shop, tiền tệ, Battle Pass và cấp rắn hiện lưu trong `localStorage` trên từng trình duyệt, không phải dữ liệu tài khoản đồng bộ/server-authoritative; không coi các chỉ số này là lợi thế gameplay hoặc giá trị mua bán trong ranked.
 
 ### Chia sẻ game miễn phí qua Cloudflare Quick Tunnel
 
@@ -102,6 +107,7 @@ Giữ cả hai terminal chạy và không để máy tính ngủ. Đây là tunn
 | **Điều hướng**         | Di chuột theo hướng muốn di chuyển       | Chạm/kéo trên màn hình       |
 | **Tăng tốc (Boost)**   | Giữ `Space` hoặc `Chuột Trái`            | Giữ nút `⚡ TỐC` ở góc phải  |
 | **Bật/Tắt âm thanh**   | Nút `🔊` ở góc dưới bên phải             | Nút `🔊` ở góc dưới bên phải |
+| **Biểu cảm nhanh**    | Phím `4`–`7` (đổi ô ở sảnh)              | Chạm một trong 4 nút biểu cảm |
 | **Hồi sinh (Respawn)** | Nhấn nút "Hồi Sinh & Tiếp Tục Chiến Đấu" | Nhấn nút hồi sinh            |
 
 ---
@@ -116,6 +122,12 @@ MoBa5v5/
 │   ├── GameRoom.js       # Game Loop (50Hz), va chạm, vòng đấu & broadcast
 │   ├── Snake.js          # Lớp Snake (vật lý, tăng trưởng, AI Bot)
 │   └── FoodManager.js    # Quản lý mồi thường & mồi rơi từ rắn chết
+│   ├── PowerupManager.js # Quản lý vật phẩm hỗ trợ trong trận
+│   ├── SoloRoomManager.js# Phòng chờ Solo 5v5
+│   ├── AccountManager.js # Tài khoản, xác thực & thống kê
+│   ├── SocialManager.js  # Presence, bạn bè và chat
+│   ├── LeaderboardManager.js
+│   └── SupabaseStorage.js# Lưu trữ bền vững tùy chọn
 └── public/
     ├── index.html        # Giao diện chính (Lobby, HUD, Modals)
     ├── css/

@@ -9,6 +9,8 @@ services:
     healthCheckPath: /api/status
     autoDeployTrigger: commit
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY

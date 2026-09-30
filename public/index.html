@@ -207,6 +207,18 @@
               </div>
             </div>
 
+            <section class="emote-loadout-panel" aria-labelledby="emote-loadout-title">
+              <div class="emote-loadout-heading">
+                <div>
+                  <span class="emote-loadout-kicker">QUICK EMOTES</span>
+                  <h3 id="emote-loadout-title">Biểu cảm trong trận</h3>
+                </div>
+                <strong id="emote-loadout-count">0/4</strong>
+              </div>
+              <div id="emote-loadout" class="emote-loadout-grid"></div>
+              <button id="btn-emote-shop" class="emote-shop-link" type="button">Mở bộ sưu tập biểu cảm</button>
+            </section>
+
             <section
               class="mode-selector"
               aria-labelledby="mode-selector-title"
@@ -710,6 +722,8 @@
         </div>
       </div>
 
+      <div id="emote-hotbar" class="emote-hotbar hud-interactive" aria-label="Biểu cảm nhanh trong trận"></div>
+
       <!-- ===== MOBILE CONTROLS ===== -->
       <div class="mobile-controls" id="mobile-controls">
         <!-- Virtual Joystick -->
@@ -788,7 +802,9 @@
               type="password"
               id="auth-input-password"
               class="text-input"
-              placeholder="Nhập mật khẩu..."
+              placeholder="Tối thiểu 12 ký tự..."
+              minlength="12"
+              maxlength="128"
               required
               autocomplete="current-password"
             />
@@ -1268,16 +1284,23 @@
           ✕
         </button>
         <div class="shop-header">
-          <div>
-            <span class="shop-tag">Shop</span>
-            <h3>Neon Market</h3>
+          <div class="shop-title-block">
+            <span class="shop-tag">SNAKE ARENA · SEASON MARKET</span>
+            <h3>Kho báu đấu trường</h3>
           </div>
-          <div class="shop-wallet">
-            <span>🪙 <strong id="shop-coins">250</strong></span>
-            <span>💎 <strong id="shop-shards">12</strong></span>
-            <span>🎫 <strong id="shop-tickets">3</strong></span>
+          <div class="shop-wallet" aria-label="Số dư tài khoản">
+            <span class="shop-wallet-coins">🪙 <strong id="shop-coins">250</strong></span>
+            <span class="shop-wallet-shards">💎 <strong id="shop-shards">12</strong></span>
+            <span class="shop-wallet-tickets">🎫 <strong id="shop-tickets">3</strong></span>
           </div>
         </div>
+        <nav class="shop-categories" aria-label="Danh mục vật phẩm">
+          <button class="shop-category-button active" data-category="all" aria-pressed="true">Tất cả <span>14</span></button>
+          <button class="shop-category-button" data-category="skins" aria-pressed="false">Ngoại hình</button>
+          <button class="shop-category-button" data-category="trails" aria-pressed="false">Vệt sáng</button>
+          <button class="shop-category-button" data-category="emotes" aria-pressed="false">Biểu cảm</button>
+          <button class="shop-category-button" data-category="boosts" aria-pressed="false">Hỗ trợ</button>
+        </nav>
         <div class="shop-grid" id="shop-grid"></div>
       </div>
     </div>

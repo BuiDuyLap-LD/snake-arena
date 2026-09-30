@@ -364,12 +364,17 @@ class Snake {
       const s = this.body[i];
       bodyCompressed.push([Math.round(s.x), Math.round(s.y)]);
     }
+    if (this.body.length > 1 && (this.body.length - 1) % bodyStep !== 0) {
+      const tail = this.body[this.body.length - 1];
+      bodyCompressed.push([Math.round(tail.x), Math.round(tail.y)]);
+    }
 
     return {
       id: this.id,
       name: this.name,
       color: this.color,
       isBot: this.isBot,
+      teamId: this.teamId,
       alive: this.alive,
       score: this.score,
       kills: this.kills,

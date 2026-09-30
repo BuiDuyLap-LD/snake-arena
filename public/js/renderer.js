@@ -14,6 +14,7 @@ class GameRenderer {
 
     // Entity Interpolation Cache (snakes smoothly updated at 60-144fps)
     this.interpolatedSnakes = new Map();
+    this.activeEmotes = new Map();
 
     // Particle FX
     this.particles = [];
@@ -34,14 +35,54 @@ class GameRenderer {
   }
 
   // Decode body from server: handles {x,y} objects (standard) or [x,y] pairs (compressed)
-  _decodeBody(body) {
+  _decodeBody(body, targetLength = body?.length || 0, bodyStep = 1) {
     if (!body || body.length === 0) return [];
     if (Array.isArray(body[0])) {
-      // Compressed format: array of [x, y] pairs
-      return body.map((pt) => ({ x: pt[0], y: pt[1] }));
+      const points = body.map((pt) => ({ x: pt[0], y: pt[1] }));
+      const length = Math.max(points.length, targetLength || points.length);
+      const stride = Math.max(1, bodyStep || 1);
+      if (stride === 1 || points.length === length) return points;
+
+      const decoded = new Array(length);
+      points.forEach((point, index) => {
+        decoded[Math.min(index * stride, length - 1)] = point;
+      });
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const startIndex = Math.min(i * stride, length - 1);
+        const endIndex = Math.min((i + 1) * stride, length - 1);
+        const span = endIndex - startIndex;
+        for (let step = 1; step < span; step += 1) {
+          const amount = step / span;
+          decoded[startIndex + step] = {
+            x: points[i].x + (points[i + 1].x - points[i].x) * amount,
+            y: points[i].y + (points[i + 1].y - points[i].y) * amount,
+          };
+        }
+      }
+      return decoded.filter(Boolean);
     }
     // Standard format: array of {x, y} objects
     return body.map((pt) => ({ x: pt.x, y: pt.y }));
+  }
+
+  showEmote(playerId, emoteId, duration = 1800) {
+    const icons = {
+      "emote-wave": "👋",
+      "emote-heart": "💖",
+      "emote-laugh": "😂",
+      "emote-fire": "🔥",
+      "emote-star": "⭐",
+      "emote-cry": "😭",
+      "emote-crown": "👑",
+      "emote-gg": "🎉",
+    };
+    const icon = icons[emoteId];
+    if (!icon || typeof playerId !== "string") return false;
+    this.activeEmotes.set(playerId, {
+      icon,
+      expiresAt: performance.now() + Math.max(700, Math.min(duration, 2500)),
+    });
+    return true;
   }
 
   // Update server snapshot targets
@@ -52,6 +93,7 @@ class GameRenderer {
 
     for (const s of serverSnakes) {
       currentIds.add(s.id);
+      if (!s.alive) this.activeEmotes.delete(s.id);
       let interp = this.interpolatedSnakes.get(s.id);
 
       if (!interp) {
@@ -72,7 +114,7 @@ class GameRenderer {
           isBoosting: s.isBoosting,
           shield: s.shield,
           length: s.length,
-          body: this._decodeBody(s.body),
+          body: this._decodeBody(s.body, s.length, s.bodyStep),
           activeEffects: s.activeEffects || { nitro: 0, vision: 0, magnet: 0 },
           inventory: s.inventory || { nitro: 0, vision: 0, magnet: 0 },
         };
@@ -104,7 +146,7 @@ class GameRenderer {
           interp.targetHead.y = s.head.y;
           interp.angle = s.angle;
           interp.targetAngle = s.angle;
-          interp.body = this._decodeBody(s.body);
+          interp.body = this._decodeBody(s.body, s.length, s.bodyStep);
         } else {
           interp.targetHead.x = s.head.x;
           interp.targetHead.y = s.head.y;
@@ -121,6 +163,7 @@ class GameRenderer {
     for (const id of this.interpolatedSnakes.keys()) {
       if (!currentIds.has(id)) {
         this.interpolatedSnakes.delete(id);
+        this.activeEmotes.delete(id);
       }
     }
   }
@@ -673,6 +716,51 @@ class GameRenderer {
           ? "#00f0ff"
           : "#ffffff";
     ctx.fillText(nameText, head.x, tagY + 2);
+    ctx.restore();
+
+    this.drawEmote(ctx, snake, baseRadius);
+  }
+
+  drawEmote(ctx, snake, baseRadius) {
+    const emote = this.activeEmotes.get(snake.id);
+    if (!emote) return;
+
+    const remaining = emote.expiresAt - performance.now();
+    if (remaining <= 0) {
+      this.activeEmotes.delete(snake.id);
+      return;
+    }
+
+    const fade = Math.min(1, remaining / 320);
+    const head = snake.head;
+    const width = 50;
+    const height = 44;
+    const x = head.x - width / 2;
+    const y = head.y - baseRadius - 70;
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = "rgba(250, 253, 255, 0.96)";
+    ctx.strokeStyle = snake.color || "#00f0ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, 13);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(head.x - 6, y + height - 1);
+    ctx.lineTo(head.x, y + height + 8);
+    ctx.lineTo(head.x + 7, y + height - 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = '27px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(emote.icon, head.x, y + height / 2 + 1);
     ctx.restore();
   }
 

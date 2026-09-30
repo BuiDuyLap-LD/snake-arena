@@ -2,6 +2,7 @@
 
 const http = require("http");
 const express = require("express");
+const { rateLimit } = require("express-rate-limit");
 const compression = require("compression");
 const { WebSocketServer } = require("ws");
 const path = require("path");
@@ -21,8 +22,20 @@ let casualRoom;
 const soloRoomManager = new SoloRoomManager();
 const soloGameRooms = new Map();
 
-app.use(express.json());
+app.set("trust proxy", 1);
+app.use(express.json({ limit: "16kb" }));
 app.use(compression({ threshold: 1024, level: 3 }));
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: "Quá nhiều lần thử. Vui lòng chờ 15 phút rồi thử lại.",
+  },
+});
 
 // Serve public directory
 const publicDir = path.join(__dirname, "..", "public");
@@ -88,7 +101,7 @@ app.get("/api/leaderboard", (req, res) => {
 });
 
 // Auth: Register
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/auth/register", authLimiter, async (req, res) => {
   const { username, password, skin } = req.body || {};
   const result = accountManager.register(username, password, skin);
   if (!result.success) {
@@ -98,7 +111,7 @@ app.post("/api/auth/register", async (req, res) => {
 });
 
 // Auth: Login
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", authLimiter, async (req, res) => {
   const { username, password } = req.body || {};
   const result = accountManager.login(username, password);
   if (!result.success) {
@@ -253,6 +266,7 @@ app.get("/api/chat/private", (req, res) => {
 const server = http.createServer(app);
 const wss = new WebSocketServer({
   server,
+  maxPayload: 16 * 1024,
   perMessageDeflate: {
     threshold: 1024,
     concurrencyLimit: 10,
@@ -502,6 +516,8 @@ wss.on("connection", (ws) => {
       // 4. In-game inputs
       else if (data.type === "PLAYER_INPUT" && hasJoinedGame) {
         joinedRoom.handlePlayerInput(playerId, data);
+      } else if (data.type === "USE_EMOTE" && hasJoinedGame) {
+        joinedRoom.sendPlayerEmote(playerId, data.emoteId);
       } else if (data.type === "USE_POWERUP" && hasJoinedGame) {
         joinedRoom.handlePlayerInput(playerId, data);
       } else if (data.type === "RESPAWN" && hasJoinedGame) {

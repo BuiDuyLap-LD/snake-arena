@@ -6,6 +6,12 @@ const crypto = require("crypto");
 const leaderboardManager = require("./LeaderboardManager");
 const supabaseStorage = require("./SupabaseStorage");
 
+const SCRYPT_N = 16384;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+const PASSWORD_MIN_LENGTH = 12;
+const PASSWORD_MAX_LENGTH = 128;
+
 class AccountManager {
   constructor() {
     this.dataDir = path.join(__dirname, "data");
@@ -51,28 +57,85 @@ class AccountManager {
       }
     }
 
+    const legacyUsers = list.filter(
+      (user) => !this.isScryptHash(user?.passwordHash),
+    );
+    if (legacyUsers.length > 0) {
+      if (process.env.NODE_ENV === "production") {
+        console.warn(
+          `[AccountManager] Reset ${legacyUsers.length} accounts with legacy credentials.`,
+        );
+        list = [];
+        if (supabaseStorage.enabled) {
+          await supabaseStorage.saveDocument("users", list);
+          await supabaseStorage.flush();
+        } else {
+          fs.writeFileSync(this.filePath, "[]", "utf8");
+        }
+      } else {
+        console.warn(
+          `[AccountManager] Ignoring ${legacyUsers.length} accounts with legacy credentials in development.`,
+        );
+        list = list.filter((user) => this.isScryptHash(user?.passwordHash));
+      }
+    }
+
+    let removedStoredSessions = false;
     for (const user of list) {
       if (!user || typeof user.username !== "string") continue;
       if (!Array.isArray(user.friends)) user.friends = [];
       if (!Array.isArray(user.friendRequests)) user.friendRequests = [];
+      if (user.token) {
+        delete user.token;
+        removedStoredSessions = true;
+      }
 
       const key = user.username.toLowerCase();
       this.users.set(key, user);
-      if (user.token) {
-        this.tokens.set(user.token, key);
-      }
+    }
+    if (removedStoredSessions) {
+      this.saveToFile();
+      if (supabaseStorage.enabled) await supabaseStorage.flush();
     }
   }
 
   hashPassword(password) {
-    return crypto
-      .createHash("sha256")
-      .update(password + "_snake_salt_2026")
-      .digest("hex");
+    const salt = crypto.randomBytes(16);
+    const derivedKey = crypto.scryptSync(password, salt, 64, {
+      N: SCRYPT_N,
+      r: SCRYPT_R,
+      p: SCRYPT_P,
+      maxmem: 64 * 1024 * 1024,
+    });
+    return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt.toString("hex")}$${derivedKey.toString("hex")}`;
+  }
+
+  isScryptHash(encoded) {
+    return typeof encoded === "string" &&
+      /^scrypt\$16384\$8\$1\$[a-f\d]{32}\$[a-f\d]{128}$/i.test(encoded);
+  }
+
+  verifyPassword(password, encoded) {
+    if (typeof password !== "string" || !this.isScryptHash(encoded)) return false;
+    const [, , , , saltHex, keyHex] = encoded.split("$");
+    const expected = Buffer.from(keyHex, "hex");
+    const actual = crypto.scryptSync(password, Buffer.from(saltHex, "hex"), expected.length, {
+      N: SCRYPT_N,
+      r: SCRYPT_R,
+      p: SCRYPT_P,
+      maxmem: 64 * 1024 * 1024,
+    });
+    return crypto.timingSafeEqual(actual, expected);
+  }
+
+  isPasswordValid(password) {
+    return typeof password === "string" &&
+      password.length >= PASSWORD_MIN_LENGTH &&
+      password.length <= PASSWORD_MAX_LENGTH;
   }
 
   generateToken() {
-    return crypto.randomBytes(24).toString("hex");
+    return crypto.randomBytes(32).toString("hex");
   }
 
   getTier(highScore) {
@@ -107,8 +170,11 @@ class AccountManager {
     if (cleanName.length < 3 || cleanName.length > 16) {
       return { success: false, error: "Tên tài khoản phải từ 3 đến 16 ký tự" };
     }
-    if (!password || password.length < 3) {
-      return { success: false, error: "Mật khẩu phải có ít nhất 3 ký tự" };
+    if (!this.isPasswordValid(password)) {
+      return {
+        success: false,
+        error: `Mật khẩu phải có từ ${PASSWORD_MIN_LENGTH} đến ${PASSWORD_MAX_LENGTH} ký tự`,
+      };
     }
 
     const key = cleanName.toLowerCase();
@@ -125,7 +191,6 @@ class AccountManager {
       id: `u_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       username: cleanName,
       passwordHash: this.hashPassword(password),
-      token,
       highScore: 0,
       totalKills: 0,
       matchesPlayed: 0,
@@ -152,8 +217,14 @@ class AccountManager {
   }
 
   login(username, password) {
-    if (!username || !password) {
+    if (!username || typeof password !== "string") {
       return { success: false, error: "Vui lòng nhập đầy đủ tên và mật khẩu" };
+    }
+    if (!this.isPasswordValid(password)) {
+      return {
+        success: false,
+        error: `Mật khẩu phải có từ ${PASSWORD_MIN_LENGTH} đến ${PASSWORD_MAX_LENGTH} ký tự`,
+      };
     }
     const key = username.trim().toLowerCase();
     const user = this.users.get(key);
@@ -165,17 +236,12 @@ class AccountManager {
       };
     }
 
-    const hash = this.hashPassword(password);
-    if (user.passwordHash !== hash) {
+    if (!this.verifyPassword(password, user.passwordHash)) {
       return { success: false, error: "Sai mật khẩu! Vui lòng thử lại." };
     }
 
     // Refresh token
     const token = this.generateToken();
-    if (user.token) {
-      this.tokens.delete(user.token);
-    }
-    user.token = token;
     user.lastLogin = Date.now();
     this.tokens.set(token, key);
     this.saveToFile();
@@ -493,7 +559,10 @@ class AccountManager {
   }
 
   saveToFile() {
-    const list = Array.from(this.users.values());
+    const list = Array.from(this.users.values(), (user) => {
+      const { token, ...safeUser } = user;
+      return safeUser;
+    });
     if (supabaseStorage.enabled) {
       supabaseStorage.saveDocument("users", list);
       return;
