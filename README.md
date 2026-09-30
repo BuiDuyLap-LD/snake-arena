@@ -50,6 +50,39 @@ npm start
 - **Trên máy chủ (Localhost)**: Mở trình duyệt và truy cập [http://localhost:3000](http://localhost:3000)
 - **Chơi nhiều người trên cùng mạng Wifi/LAN**: Các thiết bị khác (Laptop, Điện thoại) chỉ cần mở trình duyệt và truy cập vào IP của máy chủ hiển thị trên terminal (ví dụ: `http://192.168.x.x:3000`).
 
+### Deploy bằng Render Blueprint
+
+1. Đẩy repository có file `render.yaml` lên GitHub.
+2. Đăng nhập account Render mới, chọn **New > Blueprint**, rồi kết nối repository và branch cần deploy.
+3. Render tạo Web Service miễn phí tại Singapore. Sau khi deploy, mở URL service và kiểm tra `/api/status`.
+
+Free Web Service có thể spin down sau 15 phút không có traffic và cần khoảng một phút để khởi động lại. Filesystem miễn phí là tạm thời, nên dữ liệu tài khoản và bảng xếp hạng trong `server/data` có thể mất khi service restart, spin down hoặc deploy lại. Băng thông vẫn tính theo quota của workspace mới; theo dõi mục **Billing > Monthly Included Usage**, vì nếu chạm quota Render có thể suspend các service miễn phí đến kỳ tiếp theo.
+
+### Lưu tài khoản và bảng xếp hạng bằng Supabase
+
+1. Tạo project Supabase Free, mở **SQL Editor**, rồi chạy nội dung [`supabase/schema.sql`](supabase/schema.sql).
+2. Trong Render, mở service → **Environment**, thêm `SUPABASE_URL` (Project URL) và `SUPABASE_SERVICE_ROLE_KEY` (secret key phía server). Không đưa key này vào `public/` hoặc commit lên GitHub.
+3. Mặc định, lần khởi động đầu với database trống sẽ tạo tài liệu người dùng rỗng và leaderboard mẫu. Nếu đã rà soát dữ liệu local và muốn nhập `server/data/*.json`, đặt `SUPABASE_IMPORT_LOCAL_JSON=true` trước lần khởi động đầu. Quá trình này xóa token phiên đã lưu, nên người chơi cần đăng nhập lại. Sau khi hai tài liệu được tạo, có thể gỡ biến import.
+
+Server chỉ lưu snapshots của tài khoản và leaderboard vào bảng `game_documents`; game loop, bot, presence và trạng thái trận vẫn ở RAM. Supabase là nguồn dữ liệu chính khi đã cấu hình. Gói Free có giới hạn dung lượng/egress và có thể pause project sau một thời gian không hoạt động; xem [bảng giá Supabase](https://supabase.com/pricing).
+
+**Bảo mật dữ liệu cũ:** `server/data/users.json` đang được Git theo dõi và đã có bản ghi trong lịch sử repository public. Cờ import chỉ xóa token phiên; nó không xóa password hash khỏi Git history. Hãy xem xét reset mật khẩu người chơi và dọn dữ liệu nhạy cảm khỏi repository trước khi coi các tài khoản cũ là an toàn.
+
+### Chia sẻ game miễn phí qua Cloudflare Quick Tunnel
+
+Quick Tunnel tạo một URL HTTPS công khai và hỗ trợ WebSocket. Đây là cách miễn phí để bạn bè chơi thử mà không cần deploy lên Render; client tự chuyển kết nối game sang `wss://` khi mở bằng HTTPS.
+
+1. Cài `cloudflared` cho Windows từ [trang tải chính thức](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/).
+2. Mở terminal thứ nhất trong thư mục dự án và chạy `npm install`, sau đó `npm start`.
+3. Mở terminal thứ hai và chạy `cloudflared tunnel --url http://localhost:3000`.
+4. Mở URL `https://...trycloudflare.com` mà terminal thứ hai in ra và gửi URL đó cho người chơi.
+
+Giữ cả hai terminal chạy và không để máy tính ngủ. Đây là tunnel thử nghiệm, không có cam kết uptime; URL ngẫu nhiên sẽ đổi khi tạo tunnel mới. Dữ liệu tài khoản và bảng xếp hạng vẫn nằm ở `server/data` trên máy này. Phương án này miễn phí nhưng máy của bạn chính là máy chủ, nên không phù hợp để chạy 24/7. Tạo service Render khác trong cùng workspace cũng không làm mới hạn mức băng thông của workspace.
+
+### Deploy trên host có Docker
+
+Ứng dụng cần một tiến trình Node.js liên tục và hỗ trợ WebSocket; không deploy dưới dạng static site hoặc serverless function. `Dockerfile` ở thư mục gốc dùng được trên Railway hoặc VPS có Docker. Tạo persistent volume và mount tại `/app/server/data` để giữ tài khoản/bảng xếp hạng qua các lần deploy. Các host cloud có thể tính phí hoặc giới hạn mức dùng miễn phí.
+
 ---
 
 ## 🎮 Hướng Dẫn Điều Khiển

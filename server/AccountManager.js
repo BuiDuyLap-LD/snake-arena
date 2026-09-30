@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const leaderboardManager = require('./LeaderboardManager');
+const supabaseStorage = require('./SupabaseStorage');
 
 class AccountManager {
   constructor() {
@@ -11,37 +12,51 @@ class AccountManager {
     this.filePath = path.join(this.dataDir, 'users.json');
     this.users = new Map(); // usernameLower -> user object
     this.tokens = new Map(); // token -> usernameLower
-
-    this.initStorage();
   }
 
-  initStorage() {
-    try {
-      if (!fs.existsSync(this.dataDir)) {
-        fs.mkdirSync(this.dataDir, { recursive: true });
+  async initStorage() {
+    fs.mkdirSync(this.dataDir, { recursive: true });
+
+    let list = [];
+    if (fs.existsSync(this.filePath)) {
+      const raw = fs.readFileSync(this.filePath, 'utf8');
+      list = JSON.parse(raw);
+      if (!Array.isArray(list)) {
+        throw new Error('[AccountManager] users.json must contain an array.');
       }
+    }
 
-      if (fs.existsSync(this.filePath)) {
-        const raw = fs.readFileSync(this.filePath, 'utf8');
-        const list = JSON.parse(raw);
-        if (Array.isArray(list)) {
-          for (const u of list) {
-            // Ensure friends and friendRequests arrays exist
-            if (!Array.isArray(u.friends)) u.friends = [];
-            if (!Array.isArray(u.friendRequests)) u.friendRequests = [];
-
-            const key = u.username.toLowerCase();
-            this.users.set(key, u);
-            if (u.token) {
-              this.tokens.set(u.token, key);
-            }
-          }
+    if (supabaseStorage.enabled) {
+      const stored = await supabaseStorage.loadDocument('users');
+      if (stored !== null) {
+        if (!Array.isArray(stored)) {
+          throw new Error('[AccountManager] Supabase users document must be an array.');
         }
+        list = stored;
       } else {
-        this.saveToFile();
+        if (process.env.SUPABASE_IMPORT_LOCAL_JSON !== 'true') {
+          list = [];
+        } else {
+          for (const user of list) {
+            if (user && typeof user === 'object') delete user.token;
+          }
+          console.warn('[AccountManager] Imported local accounts; existing sessions were invalidated.');
+        }
+        await supabaseStorage.saveDocument('users', list);
+        await supabaseStorage.flush();
       }
-    } catch (err) {
-      console.error('[AccountManager] Storage init error:', err);
+    }
+
+    for (const user of list) {
+      if (!user || typeof user.username !== 'string') continue;
+      if (!Array.isArray(user.friends)) user.friends = [];
+      if (!Array.isArray(user.friendRequests)) user.friendRequests = [];
+
+      const key = user.username.toLowerCase();
+      this.users.set(key, user);
+      if (user.token) {
+        this.tokens.set(user.token, key);
+      }
     }
   }
 
@@ -422,8 +437,14 @@ class AccountManager {
   }
 
   saveToFile() {
+    const list = Array.from(this.users.values());
+    if (supabaseStorage.enabled) {
+      supabaseStorage.saveDocument('users', list);
+      return;
+    }
+
     try {
-      const list = Array.from(this.users.values());
+      fs.mkdirSync(this.dataDir, { recursive: true });
       fs.writeFileSync(this.filePath, JSON.stringify(list, null, 2), 'utf8');
     } catch (err) {
       console.error('[AccountManager] File save error:', err);

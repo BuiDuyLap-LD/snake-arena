@@ -10,9 +10,12 @@ const GameRoom = require("./GameRoom");
 const leaderboardManager = require("./LeaderboardManager");
 const accountManager = require("./AccountManager");
 const socialManager = require("./SocialManager");
+const supabaseStorage = require("./SupabaseStorage");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+let gameRoom;
+let casualRoom;
 
 app.use(express.json());
 app.use(compression({ threshold: 1024, level: 3 }));
@@ -27,6 +30,37 @@ function getAuthUser(req) {
   const token = authHeader.replace(/^Bearer\s+/i, "") || req.query.token;
   if (!token) return null;
   return accountManager.getRawUserByToken(token);
+}
+
+async function respondAfterPersistence(res, payload) {
+  try {
+    await supabaseStorage.flush();
+    return res.json(payload);
+  } catch (error) {
+    console.error("[Server] Could not persist account data:", error.message);
+    return res.status(503).json({
+      success: false,
+      error: "Không thể lưu dữ liệu lúc này. Vui lòng thử lại.",
+    });
+  }
+}
+
+async function persistSocketAction(ws) {
+  try {
+    await supabaseStorage.flush();
+    return true;
+  } catch (error) {
+    console.error("[Server] Could not persist socket action:", error.message);
+    if (ws.readyState === 1) {
+      ws.send(
+        JSON.stringify({
+          type: "PERSISTENCE_ERROR",
+          error: "Không thể lưu dữ liệu lúc này. Vui lòng thử lại.",
+        }),
+      );
+    }
+    return false;
+  }
 }
 
 // Health / info endpoint
@@ -49,23 +83,23 @@ app.get("/api/leaderboard", (req, res) => {
 });
 
 // Auth: Register
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
   const { username, password, skin } = req.body || {};
   const result = accountManager.register(username, password, skin);
   if (!result.success) {
     return res.status(400).json(result);
   }
-  res.json(result);
+  return respondAfterPersistence(res, result);
 });
 
 // Auth: Login
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body || {};
   const result = accountManager.login(username, password);
   if (!result.success) {
     return res.status(400).json(result);
   }
-  res.json(result);
+  return respondAfterPersistence(res, result);
 });
 
 // Auth: Verify token / Get current profile
@@ -127,7 +161,7 @@ app.get("/api/friends/search", (req, res) => {
 });
 
 // Send friend request via HTTP
-app.post("/api/friends/send", (req, res) => {
+app.post("/api/friends/send", async (req, res) => {
   const user = getAuthUser(req);
   if (!user) {
     return res.status(401).json({ success: false, error: "Chưa đăng nhập" });
@@ -148,11 +182,11 @@ app.post("/api/friends/send", (req, res) => {
       time: Date.now(),
     });
   }
-  res.json(result);
+  return respondAfterPersistence(res, result);
 });
 
 // Respond to friend request (accept / decline)
-app.post("/api/friends/respond", (req, res) => {
+app.post("/api/friends/respond", async (req, res) => {
   const user = getAuthUser(req);
   if (!user) {
     return res.status(401).json({ success: false, error: "Chưa đăng nhập" });
@@ -172,11 +206,11 @@ app.post("/api/friends/respond", (req, res) => {
       friend: myProfile,
     });
   }
-  res.json(result);
+  return respondAfterPersistence(res, result);
 });
 
 // Remove friend
-app.post("/api/friends/remove", (req, res) => {
+app.post("/api/friends/remove", async (req, res) => {
   const user = getAuthUser(req);
   if (!user) {
     return res.status(401).json({ success: false, error: "Chưa đăng nhập" });
@@ -189,7 +223,7 @@ app.post("/api/friends/remove", (req, res) => {
       friendName: user.username,
     });
   }
-  res.json(result);
+  return respondAfterPersistence(res, result);
 });
 
 // Get Lobby Chat History
@@ -224,9 +258,8 @@ const wss = new WebSocketServer({
 });
 
 // Single main arena room
-const gameRoom = new GameRoom("arena-main");
-gameRoom.start();
-const casualRoom = new GameRoom("arena-casual", { recordStats: false });
+gameRoom = null;
+casualRoom = null;
 
 let nextClientId = 1000;
 
@@ -249,7 +282,7 @@ wss.on("connection", (ws) => {
     }),
   );
 
-  ws.on("message", (message) => {
+  ws.on("message", async (message) => {
     try {
       const data = JSON.parse(message);
 
@@ -337,6 +370,7 @@ wss.on("connection", (ws) => {
       // 5. Social & Friend Actions
       else if (data.type === "FRIEND_REQUEST_SEND") {
         const res = socialManager.sendFriendRequest(socketId, data.toUsername);
+        if (res.success && !(await persistSocketAction(ws))) return;
         ws.send(
           JSON.stringify({
             type: "FRIEND_REQUEST_RESULT",
@@ -349,6 +383,7 @@ wss.on("connection", (ws) => {
           data.fromUsername,
           data.accept !== false,
         );
+        if (res.success && !(await persistSocketAction(ws))) return;
         ws.send(
           JSON.stringify({
             type: "FRIEND_RESPOND_RESULT",
@@ -357,6 +392,7 @@ wss.on("connection", (ws) => {
         );
       } else if (data.type === "FRIEND_REMOVE") {
         const res = socialManager.removeFriend(socketId, data.friendUsername);
+        if (res.success && !(await persistSocketAction(ws))) return;
         ws.send(
           JSON.stringify({
             type: "FRIEND_REMOVE_RESULT",
@@ -472,11 +508,54 @@ function getLocalIp() {
   return best ? best.address : "localhost";
 }
 
-server.listen(PORT, "0.0.0.0", () => {
-  const localIp = getLocalIp();
-  console.log(`=======================================================`);
-  console.log(`🐍 Multiplayer Snake Arena Server is RUNNING!`);
-  console.log(`👉 Local:   http://localhost:${PORT}`);
-  console.log(`👉 LAN:     http://${localIp}:${PORT}`);
-  console.log(`=======================================================`);
+async function startServer() {
+  await Promise.all([
+    accountManager.initStorage(),
+    leaderboardManager.initStorage(),
+  ]);
+
+  if (supabaseStorage.enabled) {
+    console.log("[Storage] Persistent data is backed by Supabase.");
+  } else {
+    console.log("[Storage] Supabase is not configured; using local JSON files.");
+  }
+
+  gameRoom = new GameRoom("arena-main");
+  gameRoom.start();
+  casualRoom = new GameRoom("arena-casual", { recordStats: false });
+
+  server.listen(PORT, "0.0.0.0", () => {
+    const localIp = getLocalIp();
+    console.log(`=======================================================`);
+    console.log(`🐍 Multiplayer Snake Arena Server is RUNNING!`);
+    console.log(`👉 Local:   http://localhost:${PORT}`);
+    console.log(`👉 LAN:     http://${localIp}:${PORT}`);
+    console.log(`=======================================================`);
+  });
+}
+
+async function shutdown() {
+  if (gameRoom) gameRoom.stop();
+  if (casualRoom) casualRoom.stop();
+  for (const client of wss.clients) {
+    client.terminate();
+  }
+
+  if (!server.listening) return;
+  server.close(async () => {
+    try {
+      await supabaseStorage.flush();
+    } catch (error) {
+      console.error("[Server] Could not flush Supabase writes on shutdown:", error.message);
+      process.exitCode = 1;
+    }
+  });
+}
+
+process.once("SIGTERM", shutdown);
+process.once("SIGINT", shutdown);
+
+startServer().catch((error) => {
+  console.error("[Server] Startup failed:", error);
+  process.exitCode = 1;
 });
