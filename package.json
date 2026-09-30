@@ -4,7 +4,8 @@
   "description": "Multiplayer Snake Arena - Game rắn săn mồi 2D nhiều người chơi trực tuyến",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node server/server.js",
+    "test": "node --test"
   },
   "keywords": [
     "game",

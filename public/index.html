@@ -6,10 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>
-      Multiplayer Snake Arena 5v5 - Đấu Trường Rắn Săn Mồi Cực Đỉnh dev by
-      duylap
-    </title>
+    <title>Snake Arena 5v5 | Đấu Trường Rắn Săn Mồi</title>
     <meta
       name="description"
       content="Game rắn săn mồi 2D nhiều người chơi trực tuyến với tài khoản cố định lưu vĩnh viễn Rank, kỹ năng cường hóa, và bảng rank toàn cầu!"
@@ -42,7 +39,7 @@
           <div class="lobby-header-actions">
             <div class="app-version-banner" aria-label="Phiên bản hiện tại">
               <span class="version-tag">v1.0</span>
-              <span class="version-meta">DEV by DuyLap</span>
+              <span class="version-meta">BẢN PHÁT HÀNH</span>
             </div>
             <div class="online-indicator">
               <span class="online-dot"></span>
@@ -145,78 +142,6 @@
               >
             </div>
 
-            <div class="progression-panel">
-              <div class="progression-header">
-                <div>
-                  <span class="progression-kicker">Season 1</span>
-                  <h3>Neon Arena</h3>
-                </div>
-                <button id="btn-open-shop" class="btn-shop-pill" type="button">
-                  🛒 Shop
-                </button>
-              </div>
-
-              <div class="account-level-row">
-                <div class="level-badge" id="account-level-badge">Lv. 1</div>
-                <div class="xp-meta">
-                  <span id="account-xp-text">0 / 100 XP</span>
-                  <span id="account-rank-text">Hạng: Đồng</span>
-                </div>
-              </div>
-              <div class="xp-bar-track">
-                <div id="account-xp-bar" class="xp-bar-fill"></div>
-              </div>
-
-              <div class="currency-row">
-                <div class="currency-chip">
-                  <span>🪙</span><strong id="currency-coins">250</strong>
-                </div>
-                <div class="currency-chip">
-                  <span>💎</span><strong id="currency-shards">12</strong>
-                </div>
-                <div class="currency-chip">
-                  <span>🎫</span><strong id="currency-tickets">3</strong>
-                </div>
-              </div>
-            </div>
-
-            <div class="battle-pass-panel">
-              <div class="battle-pass-header">
-                <div class="battle-pass-title-wrap">
-                  <span class="battle-pass-tag">Battle Pass</span>
-                  <h3>Season 1 • Neon Arena</h3>
-                </div>
-                <button
-                  id="btn-battle-pass-premium"
-                  class="btn-battle-pass-premium"
-                  type="button"
-                >
-                  Premium
-                </button>
-              </div>
-
-              <div class="battle-pass-track-wrap">
-                <div class="battle-pass-track">
-                  <div id="battle-pass-fill" class="battle-pass-fill"></div>
-                </div>
-                <span
-                  id="battle-pass-level-label"
-                  class="battle-pass-level-label"
-                  >Lv. 1</span
-                >
-              </div>
-
-              <div id="battle-pass-grid" class="battle-pass-grid"></div>
-            </div>
-
-            <div class="quests-panel">
-              <div class="quests-header">
-                <span class="quests-kicker">Missions</span>
-                <h3>Nhiệm vụ</h3>
-              </div>
-              <div id="quest-list" class="quest-list"></div>
-            </div>
-
             <!-- Name Input -->
             <div class="input-group">
               <label for="player-name" class="input-label"
@@ -282,44 +207,6 @@
               </div>
             </div>
 
-            <div class="snake-stats-panel">
-              <div class="snake-stats-header">
-                <div>
-                  <span class="snake-stats-kicker">Rắn & Skin</span>
-                  <h3>Chỉ số rắn</h3>
-                </div>
-                <span id="snake-level-badge" class="snake-level-badge">Lv. 1</span>
-              </div>
-
-              <div class="snake-stat-grid">
-                <div class="snake-stat-box">
-                  <span>Tốc độ</span>
-                  <strong id="stat-speed">+0%</strong>
-                </div>
-                <div class="snake-stat-box">
-                  <span>Boost</span>
-                  <strong id="stat-boost">+0%</strong>
-                </div>
-                <div class="snake-stat-box">
-                  <span>Magnet</span>
-                  <strong id="stat-magnet">+0%</strong>
-                </div>
-                <div class="snake-stat-box">
-                  <span>Shield</span>
-                  <strong id="stat-shield">+0%</strong>
-                </div>
-              </div>
-
-              <div class="snake-upgrade-row">
-                <button id="btn-upgrade-snake" class="btn-upgrade-snake" type="button">
-                  Nâng cấp rắn
-                </button>
-                <span id="snake-upgrade-cost" class="snake-upgrade-cost">
-                  Phí: 60 🪙
-                </span>
-              </div>
-            </div>
-
             <section
               class="mode-selector"
               aria-labelledby="mode-selector-title"
@@ -380,7 +267,11 @@
                 <h3>Chọn sân chơi</h3>
               </div>
               <div class="map-selector-grid">
-                <button class="map-option active" type="button" data-map-id="neon-grid">
+                <button
+                  class="map-option active"
+                  type="button"
+                  data-map-id="neon-grid"
+                >
                   <span class="map-option-icon">🌃</span>
                   <span class="map-option-copy">
                     <strong>Neon Grid</strong>
@@ -391,22 +282,59 @@
                   <span class="map-option-icon">🧭</span>
                   <span class="map-option-copy">
                     <strong>Ash Maze</strong>
-                    <small>Nhánh dài</small>
+                    <small>Vùng rộng · đường chạy dài</small>
                   </span>
                 </button>
-                <button class="map-option" type="button" data-map-id="crystal-lake">
+                <button
+                  class="map-option"
+                  type="button"
+                  data-map-id="crystal-lake"
+                >
                   <span class="map-option-icon">💎</span>
                   <span class="map-option-copy">
                     <strong>Crystal Lake</strong>
-                    <small>Không gian rộng</small>
+                    <small>Mật độ ổn định</small>
                   </span>
                 </button>
-                <button class="map-option" type="button" data-map-id="sunfire-arena">
+                <button
+                  class="map-option"
+                  type="button"
+                  data-map-id="sunfire-arena"
+                >
                   <span class="map-option-icon">🔥</span>
                   <span class="map-option-copy">
                     <strong>Sunfire Arena</strong>
-                    <small>Speed boost</small>
+                    <small>Sân hẹp · giao tranh dày</small>
                   </span>
+                </button>
+              </div>
+            </div>
+
+            <div id="solo-room-rules" class="solo-room-rules hidden">
+              <div class="solo-room-rules-header">
+                <span class="solo-room-rules-kicker">Phòng riêng</span>
+                <h3>Preset trận đấu</h3>
+              </div>
+              <div class="solo-room-rule-grid">
+                <button
+                  class="solo-rule-option active"
+                  data-rule="classic"
+                  type="button"
+                >
+                  <span>⚔️</span>
+                  <small>Classic</small>
+                </button>
+                <button
+                  class="solo-rule-option"
+                  data-rule="speed"
+                  type="button"
+                >
+                  <span>⚡</span>
+                  <small>Speed</small>
+                </button>
+                <button class="solo-rule-option" data-rule="long" type="button">
+                  <span>⏱️</span>
+                  <small>Long</small>
                 </button>
               </div>
             </div>
@@ -483,44 +411,170 @@
             </div>
           </div>
 
-          <!-- Right Panel: Global Leaderboard (Human Players Only) -->
-          <div class="lobby-card card-rank">
-            <div class="card-header flex-between">
-              <h2>🏆 Bảng Rank Cao Thủ <span>(Người Thật)</span></h2>
-              <button
-                id="btn-refresh-rank"
-                class="btn-refresh-icon"
-                title="Cập nhật bảng xếp hạng"
-              >
-                🔄
-              </button>
+          <aside class="lobby-side-column" aria-label="Tiến trình và cộng đồng">
+            <div class="progression-panel">
+              <div class="progression-header">
+                <div>
+                  <span class="progression-kicker">Season 1</span>
+                  <h3>Neon Arena</h3>
+                </div>
+                <button id="btn-open-shop" class="btn-shop-pill" type="button">
+                  🛒 Shop
+                </button>
+              </div>
+
+              <div class="account-level-row">
+                <div class="level-badge" id="account-level-badge">Lv. 1</div>
+                <div class="xp-meta">
+                  <span id="account-xp-text">0 / 100 XP</span>
+                  <span id="account-rank-text">Hạng: Đồng</span>
+                </div>
+              </div>
+              <div class="xp-bar-track">
+                <div id="account-xp-bar" class="xp-bar-fill"></div>
+              </div>
+
+              <div class="currency-row">
+                <div class="currency-chip">
+                  <span>🪙</span><strong id="currency-coins">250</strong>
+                </div>
+                <div class="currency-chip">
+                  <span>💎</span><strong id="currency-shards">12</strong>
+                </div>
+                <div class="currency-chip">
+                  <span>🎫</span><strong id="currency-tickets">3</strong>
+                </div>
+              </div>
             </div>
 
-            <p class="rank-subtitle">
-              Bảng vinh danh tích điểm từ các trận đấu nhiều người chơi
-            </p>
+            <div class="snake-stats-panel">
+              <div class="snake-stats-header">
+                <div>
+                  <span class="snake-stats-kicker">Rắn & Skin</span>
+                  <h3>Chỉ số rắn</h3>
+                </div>
+                <span id="snake-level-badge" class="snake-level-badge"
+                  >Lv. 1</span
+                >
+              </div>
 
-            <div class="rank-table-container">
-              <table class="global-rank-table">
-                <thead>
-                  <tr>
-                    <th style="width: 48px">Hạng</th>
-                    <th>Người Chơi</th>
-                    <th>Bậc Rank</th>
-                    <th style="text-align: right">Kỷ Lục</th>
-                    <th style="text-align: right">Kills</th>
-                  </tr>
-                </thead>
-                <tbody id="global-rank-tbody">
-                  <tr>
-                    <td colspan="5" class="table-loading">
-                      Đang tải dữ liệu cao thủ...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="snake-stat-grid">
+                <div class="snake-stat-box">
+                  <span>Tốc độ</span>
+                  <strong id="stat-speed">+0%</strong>
+                </div>
+                <div class="snake-stat-box">
+                  <span>Boost</span>
+                  <strong id="stat-boost">+0%</strong>
+                </div>
+                <div class="snake-stat-box">
+                  <span>Magnet</span>
+                  <strong id="stat-magnet">+0%</strong>
+                </div>
+                <div class="snake-stat-box">
+                  <span>Shield</span>
+                  <strong id="stat-shield">+0%</strong>
+                </div>
+              </div>
+
+              <div class="snake-upgrade-row">
+                <button
+                  id="btn-upgrade-snake"
+                  class="btn-upgrade-snake"
+                  type="button"
+                >
+                  Nâng cấp rắn
+                </button>
+                <span id="snake-upgrade-cost" class="snake-upgrade-cost">
+                  Phí: 60 🪙
+                </span>
+              </div>
             </div>
-          </div>
+
+            <details class="battle-pass-panel">
+              <summary class="lobby-panel-summary">
+                <span class="lobby-panel-copy">
+                  <span class="battle-pass-tag">Battle Pass</span>
+                  <strong>Season 1 • Neon Arena</strong>
+                </span>
+                <span
+                  id="battle-pass-level-label"
+                  class="battle-pass-level-label"
+                  >Lv. 1</span
+                >
+              </summary>
+              <div class="battle-pass-panel-content">
+                <div class="battle-pass-header">
+                  <div class="battle-pass-title-wrap">
+                    <span class="battle-pass-tag">Battle Pass</span>
+                    <h3>Season 1 • Neon Arena</h3>
+                  </div>
+                  <button
+                    id="btn-battle-pass-premium"
+                    class="btn-battle-pass-premium"
+                    type="button"
+                  >
+                    Premium
+                  </button>
+                </div>
+
+                <div class="battle-pass-track-wrap">
+                  <div class="battle-pass-track">
+                    <div id="battle-pass-fill" class="battle-pass-fill"></div>
+                  </div>
+                </div>
+
+                <div id="battle-pass-grid" class="battle-pass-grid"></div>
+              </div>
+            </details>
+
+            <details class="quests-panel">
+              <summary class="lobby-panel-summary">
+                <span class="quests-kicker">Missions</span>
+                <h3>Nhiệm vụ</h3>
+              </summary>
+              <div id="quest-list" class="quest-list"></div>
+            </details>
+
+            <!-- Right Panel: Global Leaderboard (Human Players Only) -->
+            <div class="lobby-card card-rank">
+              <div class="card-header flex-between">
+                <h2>🏆 Bảng Rank Cao Thủ <span>(Người Thật)</span></h2>
+                <button
+                  id="btn-refresh-rank"
+                  class="btn-refresh-icon"
+                  title="Cập nhật bảng xếp hạng"
+                >
+                  🔄
+                </button>
+              </div>
+
+              <p class="rank-subtitle">
+                Bảng vinh danh tích điểm từ các trận đấu nhiều người chơi
+              </p>
+
+              <div class="rank-table-container">
+                <table class="global-rank-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 48px">Hạng</th>
+                      <th>Người Chơi</th>
+                      <th>Bậc Rank</th>
+                      <th style="text-align: right">Kỷ Lục</th>
+                      <th style="text-align: right">Kills</th>
+                    </tr>
+                  </thead>
+                  <tbody id="global-rank-tbody">
+                    <tr>
+                      <td colspan="5" class="table-loading">
+                        Đang tải dữ liệu cao thủ...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </aside>
         </div>
 
         <!-- Bottom Skill & Item Guide -->
@@ -532,7 +586,7 @@
             <div class="guide-item">
               <div class="guide-badge nitro">⚡ [Phím 1]</div>
               <div class="guide-desc">
-                <strong>Tăng Tốc Đột Biến:</strong> Phóng vọt 2.2x trong 5 giây,
+                <strong>Tăng Tốc Đột Biến:</strong> Phóng vọt 1.9x trong 3 giây,
                 <em>không hao hụt độ dài và điểm</em>!
               </div>
             </div>
@@ -563,7 +617,7 @@
           🏠 Sảnh
         </button>
         <div class="hud-divider"></div>
-        <div id="match-timer" class="match-timer">⏱️ 03:00</div>
+        <div id="match-timer" class="match-timer">⏱️ 10:00</div>
         <div class="hud-divider"></div>
         <div id="player-count" class="player-count-badge">👥 1 người chơi</div>
       </div>

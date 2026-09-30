@@ -3,10 +3,10 @@
 class GameRenderer {
   constructor(canvas, minimapCanvas) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas.getContext("2d");
 
     this.minimapCanvas = minimapCanvas;
-    this.minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
+    this.minimapCtx = minimapCanvas ? minimapCanvas.getContext("2d") : null;
 
     this.camX = 0;
     this.camY = 0;
@@ -20,7 +20,7 @@ class GameRenderer {
     this.radarAngle = 0;
 
     this.resize();
-    window.addEventListener('resize', () => this.resize());
+    window.addEventListener("resize", () => this.resize());
   }
 
   resize() {
@@ -38,10 +38,10 @@ class GameRenderer {
     if (!body || body.length === 0) return [];
     if (Array.isArray(body[0])) {
       // Compressed format: array of [x, y] pairs
-      return body.map(pt => ({ x: pt[0], y: pt[1] }));
+      return body.map((pt) => ({ x: pt[0], y: pt[1] }));
     }
     // Standard format: array of {x, y} objects
-    return body.map(pt => ({ x: pt.x, y: pt.y }));
+    return body.map((pt) => ({ x: pt.x, y: pt.y }));
   }
 
   // Update server snapshot targets
@@ -86,10 +86,17 @@ class GameRenderer {
         interp.isBoosting = s.isBoosting;
         interp.shield = s.shield;
         interp.length = s.length;
-        interp.activeEffects = s.activeEffects || { nitro: 0, vision: 0, magnet: 0 };
+        interp.activeEffects = s.activeEffects || {
+          nitro: 0,
+          vision: 0,
+          magnet: 0,
+        };
         interp.inventory = s.inventory || { nitro: 0, vision: 0, magnet: 0 };
 
-        const distFromCurrent = Math.hypot(s.head.x - interp.head.x, s.head.y - interp.head.y);
+        const distFromCurrent = Math.hypot(
+          s.head.x - interp.head.x,
+          s.head.y - interp.head.y,
+        );
         if (distFromCurrent > 180) {
           interp.head.x = s.head.x;
           interp.head.y = s.head.y;
@@ -159,7 +166,7 @@ class GameRenderer {
           snake.head.y += (snake.targetHead.y - snake.head.y) * 0.22;
         }
 
-        if (typeof snake.targetAngle === 'number') {
+        if (typeof snake.targetAngle === "number") {
           let diff = snake.targetAngle - snake.angle;
           while (diff < -Math.PI) diff += Math.PI * 2;
           while (diff > Math.PI) diff -= Math.PI * 2;
@@ -199,7 +206,7 @@ class GameRenderer {
           vx: -Math.cos(snake.angle) * (60 + Math.random() * 80),
           vy: -Math.sin(snake.angle) * (60 + Math.random() * 80),
           radius: Math.random() * 4 + 2,
-          color: isNitro ? '#ff9900' : snake.color,
+          color: isNitro ? "#ff9900" : snake.color,
           alpha: 0.85,
           life: 0.35,
         });
@@ -220,7 +227,14 @@ class GameRenderer {
     }
   }
 
-  render(foodsMap, localPlayerId, arenaRadius = 2200, dt = 0.016, currentInput = null, powerupsList = []) {
+  render(
+    foodsMap,
+    localPlayerId,
+    arenaRadius = 2200,
+    dt = 0.016,
+    currentInput = null,
+    powerupsList = [],
+  ) {
     this.updateInterpolation(dt, localPlayerId, currentInput);
     this.updateParticles(dt);
 
@@ -229,7 +243,7 @@ class GameRenderer {
     const height = this.canvas.height;
 
     // Clear background
-    ctx.fillStyle = '#06080e';
+    ctx.fillStyle = "#06080e";
     ctx.fillRect(0, 0, width, height);
 
     // Camera follow on local snake
@@ -238,7 +252,8 @@ class GameRenderer {
       this.camX += (localSnake.head.x - this.camX) * 0.2;
       this.camY += (localSnake.head.y - this.camY) * 0.2;
 
-      const isVision = localSnake.activeEffects && localSnake.activeEffects.vision > 0;
+      const isVision =
+        localSnake.activeEffects && localSnake.activeEffects.vision > 0;
       let targetZoom = Math.max(0.72, 1.0 - (localSnake.length / 500) * 0.28);
       if (isVision) {
         targetZoom *= 0.62; // 1.7x wide zoom out
@@ -292,15 +307,15 @@ class GameRenderer {
 
   drawGrid(ctx, viewW, viewH) {
     const gridSize = 64;
-    const halfW = (viewW / 2) / this.zoom;
-    const halfH = (viewH / 2) / this.zoom;
+    const halfW = viewW / 2 / this.zoom;
+    const halfH = viewH / 2 / this.zoom;
 
     const startX = Math.floor((this.camX - halfW) / gridSize) * gridSize;
     const endX = Math.ceil((this.camX + halfW) / gridSize) * gridSize;
     const startY = Math.floor((this.camY - halfH) / gridSize) * gridSize;
     const endY = Math.ceil((this.camY + halfH) / gridSize) * gridSize;
 
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
+    ctx.strokeStyle = "rgba(0, 240, 255, 0.04)";
     ctx.lineWidth = 1;
     ctx.beginPath();
 
@@ -314,7 +329,7 @@ class GameRenderer {
     }
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
     for (let x = startX; x <= endX; x += gridSize * 2) {
       for (let y = startY; y <= endY; y += gridSize * 2) {
         ctx.fillRect(x - 1, y - 1, 2, 2);
@@ -328,26 +343,31 @@ class GameRenderer {
     // Outer dark void
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.rect(radius + 1200, -radius - 1200, -2 * (radius + 1200), 2 * (radius + 1200));
-    ctx.fillStyle = 'rgba(4, 6, 12, 0.85)';
+    ctx.rect(
+      radius + 1200,
+      -radius - 1200,
+      -2 * (radius + 1200),
+      2 * (radius + 1200),
+    );
+    ctx.fillStyle = "rgba(4, 6, 12, 0.85)";
     ctx.fill();
 
     // Forcefield glow
     ctx.beginPath();
     ctx.arc(0, 0, radius + 4, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 51, 102, 0.25)';
+    ctx.strokeStyle = "rgba(255, 51, 102, 0.25)";
     ctx.lineWidth = 20;
     ctx.stroke();
 
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 51, 102, 0.8)';
+    ctx.strokeStyle = "rgba(255, 51, 102, 0.8)";
     ctx.lineWidth = 8;
     ctx.stroke();
 
     ctx.beginPath();
     ctx.arc(0, 0, radius - 2, 0, Math.PI * 2);
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -355,8 +375,8 @@ class GameRenderer {
   }
 
   drawFoods(ctx, foodsMap) {
-    const halfW = (this.canvas.width / 2) / this.zoom + 80;
-    const halfH = (this.canvas.height / 2) / this.zoom + 80;
+    const halfW = this.canvas.width / 2 / this.zoom + 80;
+    const halfH = this.canvas.height / 2 / this.zoom + 80;
     const minX = this.camX - halfW;
     const maxX = this.camX + halfW;
     const minY = this.camY - halfH;
@@ -384,7 +404,7 @@ class GameRenderer {
       // White shine
       ctx.beginPath();
       ctx.arc(f.x - r * 0.25, f.y - r * 0.25, r * 0.4, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = "#ffffff";
       ctx.globalAlpha = 0.85;
       ctx.fill();
 
@@ -394,8 +414,8 @@ class GameRenderer {
 
   drawPowerups(ctx, powerupsList) {
     const time = Date.now() * 0.003;
-    const halfW = (this.canvas.width / 2) / this.zoom + 120;
-    const halfH = (this.canvas.height / 2) / this.zoom + 120;
+    const halfW = this.canvas.width / 2 / this.zoom + 120;
+    const halfH = this.canvas.height / 2 / this.zoom + 120;
     const minX = this.camX - halfW;
     const maxX = this.camX + halfW;
     const minY = this.camY - halfH;
@@ -407,14 +427,14 @@ class GameRenderer {
       ctx.save();
       ctx.translate(p.x, p.y);
 
-      let color = '#ffbe0b';
-      let icon = '⚡';
-      if (p.type === 'vision') {
-        color = '#bd00ff';
-        icon = '👁️';
-      } else if (p.type === 'magnet') {
-        color = '#00f0ff';
-        icon = '🧲';
+      let color = "#ffbe0b";
+      let icon = "⚡";
+      if (p.type === "vision") {
+        color = "#bd00ff";
+        icon = "👁️";
+      } else if (p.type === "magnet") {
+        color = "#00f0ff";
+        icon = "🧲";
       }
 
       const pulse = Math.sin(time * 3 + p.id) * 3;
@@ -438,9 +458,9 @@ class GameRenderer {
 
       // Glowing sphere body
       const grad = ctx.createRadialGradient(-4, -4, 2, 0, 0, radius);
-      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0, "#ffffff");
       grad.addColorStop(0.5, color);
-      grad.addColorStop(1, '#0a0f1d');
+      grad.addColorStop(1, "#0a0f1d");
       ctx.beginPath();
       ctx.arc(0, 0, radius, 0, Math.PI * 2);
       ctx.fillStyle = grad;
@@ -449,9 +469,9 @@ class GameRenderer {
 
       // Icon
       ctx.globalAlpha = 1.0;
-      ctx.font = '15px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.font = "15px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(icon, 0, 1);
 
       ctx.restore();
@@ -477,14 +497,14 @@ class GameRenderer {
       ctx.arc(seg.x, seg.y, segRadius, 0, Math.PI * 2);
 
       if (isNitro) {
-        ctx.fillStyle = i % 2 === 0 ? '#ffbe0b' : '#ff0055';
+        ctx.fillStyle = i % 2 === 0 ? "#ffbe0b" : "#ff0055";
       } else {
-        ctx.fillStyle = i % 2 === 0 ? snake.color : '#111827';
+        ctx.fillStyle = i % 2 === 0 ? snake.color : "#111827";
       }
       ctx.fill();
 
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = isNitro ? '#ffd700' : snake.color;
+      ctx.strokeStyle = isNitro ? "#ffd700" : snake.color;
       ctx.stroke();
     }
 
@@ -492,8 +512,16 @@ class GameRenderer {
     if ((snake.isBoosting || isNitro) && body.length > 0) {
       const tail = body[body.length - 1];
       ctx.beginPath();
-      ctx.arc(tail.x + (Math.random() - 0.5) * 6, tail.y + (Math.random() - 0.5) * 6, baseRadius * (isNitro ? 1.4 : 0.9), 0, Math.PI * 2);
-      ctx.fillStyle = isNitro ? 'rgba(255, 190, 11, 0.95)' : 'rgba(255, 170, 0, 0.8)';
+      ctx.arc(
+        tail.x + (Math.random() - 0.5) * 6,
+        tail.y + (Math.random() - 0.5) * 6,
+        baseRadius * (isNitro ? 1.4 : 0.9),
+        0,
+        Math.PI * 2,
+      );
+      ctx.fillStyle = isNitro
+        ? "rgba(255, 190, 11, 0.95)"
+        : "rgba(255, 170, 0, 0.8)";
       ctx.fill();
     }
 
@@ -506,7 +534,7 @@ class GameRenderer {
     if (isLocal) {
       ctx.beginPath();
       ctx.arc(0, 0, baseRadius + 7, 0, Math.PI * 2);
-      ctx.fillStyle = isNitro ? '#ffbe0b' : snake.color;
+      ctx.fillStyle = isNitro ? "#ffbe0b" : snake.color;
       ctx.globalAlpha = 0.32;
       ctx.fill();
       ctx.globalAlpha = 1.0;
@@ -523,7 +551,7 @@ class GameRenderer {
     // Head base circle
     ctx.beginPath();
     ctx.arc(0, 0, baseRadius + 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = isNitro ? '#ff9900' : snake.color;
+    ctx.fillStyle = isNitro ? "#ff9900" : snake.color;
     ctx.fill();
 
     // Eyes
@@ -532,7 +560,7 @@ class GameRenderer {
     const eyeRadius = baseRadius * 0.38;
     const pupilRadius = eyeRadius * 0.55;
 
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(eyeOffsetX, -eyeOffsetY, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
@@ -541,7 +569,7 @@ class GameRenderer {
     ctx.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#05070d';
+    ctx.fillStyle = "#05070d";
     ctx.beginPath();
     ctx.arc(eyeOffsetX + 2, -eyeOffsetY, pupilRadius, 0, Math.PI * 2);
     ctx.fill();
@@ -561,7 +589,7 @@ class GameRenderer {
         ctx.save();
         ctx.beginPath();
         ctx.arc(head.x, head.y, ringRad, 0, Math.PI * 2);
-        ctx.strokeStyle = '#00f0ff';
+        ctx.strokeStyle = "#00f0ff";
         ctx.lineWidth = 2;
         ctx.globalAlpha = ringAlpha * 0.7;
         ctx.stroke();
@@ -575,7 +603,7 @@ class GameRenderer {
       ctx.save();
       ctx.beginPath();
       ctx.arc(head.x, head.y, baseRadius + 16, 0, Math.PI * 2);
-      ctx.strokeStyle = '#bd00ff';
+      ctx.strokeStyle = "#bd00ff";
       ctx.lineWidth = 2.5;
       ctx.setLineDash([5, 5]);
       ctx.lineDashOffset = time * 25;
@@ -593,10 +621,10 @@ class GameRenderer {
       ctx.save();
       ctx.beginPath();
       ctx.arc(head.x, head.y, shieldRadius, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
+      ctx.fillStyle = "rgba(0, 240, 255, 0.18)";
       ctx.fill();
 
-      ctx.strokeStyle = '#00f0ff';
+      ctx.strokeStyle = "#00f0ff";
       ctx.lineWidth = 2.5;
       ctx.setLineDash([8, 6]);
       ctx.lineDashOffset = -time * 20;
@@ -604,7 +632,7 @@ class GameRenderer {
 
       ctx.beginPath();
       ctx.arc(head.x, head.y, shieldRadius - 3, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.restore();
@@ -613,29 +641,37 @@ class GameRenderer {
     // 7. Draw Name Tag & Active Skill Badges
     ctx.save();
     ctx.font = 'bold 12px "Outfit", sans-serif';
-    ctx.textAlign = 'center';
+    ctx.textAlign = "center";
 
     const tagY = head.y - baseRadius - (snake.shield ? 18 : 12);
-    let badges = '';
-    if (snake.shield) badges += '🛡️';
-    if (isNitro) badges += '⚡';
-    if (isMagnet) badges += '🧲';
-    if (isVision) badges += '👁️';
+    let badges = "";
+    if (snake.shield) badges += "🛡️";
+    if (isNitro) badges += "⚡";
+    if (isMagnet) badges += "🧲";
+    if (isVision) badges += "👁️";
 
-    const prefix = badges ? `${badges} ` : '';
+    const prefix = badges ? `${badges} ` : "";
     const nameText = `${prefix}${snake.name} (${Math.round(snake.score)})`;
 
-    ctx.fillStyle = snake.shield ? 'rgba(0, 40, 70, 0.85)' : 'rgba(10, 15, 29, 0.75)';
+    ctx.fillStyle = snake.shield
+      ? "rgba(0, 40, 70, 0.85)"
+      : "rgba(10, 15, 29, 0.75)";
     const textWidth = ctx.measureText(nameText).width;
     ctx.fillRect(head.x - textWidth / 2 - 6, tagY - 14, textWidth + 12, 18);
 
     if (snake.shield) {
-      ctx.strokeStyle = '#00f0ff';
+      ctx.strokeStyle = "#00f0ff";
       ctx.lineWidth = 1;
       ctx.strokeRect(head.x - textWidth / 2 - 6, tagY - 14, textWidth + 12, 18);
     }
 
-    ctx.fillStyle = isNitro ? '#ffd700' : (snake.shield ? '#00f0ff' : (isLocal ? '#00f0ff' : '#ffffff'));
+    ctx.fillStyle = isNitro
+      ? "#ffd700"
+      : snake.shield
+        ? "#00f0ff"
+        : isLocal
+          ? "#00f0ff"
+          : "#ffffff";
     ctx.fillText(nameText, head.x, tagY + 2);
     ctx.restore();
   }
@@ -666,7 +702,7 @@ class GameRenderer {
     // Circular background
     mctx.beginPath();
     mctx.arc(cx, cy, mapRadius, 0, Math.PI * 2);
-    mctx.fillStyle = 'rgba(8, 12, 22, 0.9)';
+    mctx.fillStyle = "rgba(8, 12, 22, 0.9)";
     mctx.fill();
 
     // Radar scan beam
@@ -676,14 +712,14 @@ class GameRenderer {
     mctx.moveTo(cx, cy);
     mctx.arc(cx, cy, mapRadius, this.radarAngle, this.radarAngle + 0.45);
     mctx.closePath();
-    mctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
+    mctx.fillStyle = "rgba(0, 240, 255, 0.08)";
     mctx.fill();
     mctx.restore();
 
     // Boundary ring
     mctx.beginPath();
     mctx.arc(cx, cy, mapRadius, 0, Math.PI * 2);
-    mctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+    mctx.strokeStyle = "rgba(0, 240, 255, 0.4)";
     mctx.lineWidth = 1.5;
     mctx.stroke();
 
@@ -695,7 +731,12 @@ class GameRenderer {
       const py = cy + p.y * scale;
       mctx.beginPath();
       mctx.arc(px, py, 2.2, 0, Math.PI * 2);
-      mctx.fillStyle = p.type === 'nitro' ? '#ffbe0b' : (p.type === 'vision' ? '#bd00ff' : '#00f0ff');
+      mctx.fillStyle =
+        p.type === "nitro"
+          ? "#ffbe0b"
+          : p.type === "vision"
+            ? "#bd00ff"
+            : "#00f0ff";
       mctx.fill();
     }
 
@@ -708,13 +749,13 @@ class GameRenderer {
 
       mctx.beginPath();
       mctx.arc(mx, my, isLocal ? 3.8 : 2.4, 0, Math.PI * 2);
-      mctx.fillStyle = isLocal ? '#00f0ff' : '#ff3366';
+      mctx.fillStyle = isLocal ? "#00f0ff" : "#ff3366";
       mctx.fill();
 
       if (isLocal) {
         mctx.beginPath();
         mctx.arc(mx, my, 6, 0, Math.PI * 2);
-        mctx.strokeStyle = '#00f0ff';
+        mctx.strokeStyle = "#00f0ff";
         mctx.lineWidth = 1;
         mctx.stroke();
       }

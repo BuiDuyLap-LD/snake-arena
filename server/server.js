@@ -75,6 +75,7 @@ app.get("/api/status", (req, res) => {
     bots: gameRoom.bots.size,
     timeRemaining: Math.ceil(gameRoom.timeRemaining),
     onlineTotal: socialManager.getOnlinePlayerCount(),
+    storage: supabaseStorage.enabled ? "supabase" : "local-json",
   });
 });
 
@@ -356,9 +357,14 @@ wss.on("connection", (ws) => {
         }
 
         const member = createSoloMember(user, data.teamId);
+        const settings = {
+          mapId: data.mapId || "neon-grid",
+          roundDuration: data.roundDuration || 600,
+          botsEnabled: false,
+        };
         const result =
           data.type === "SOLO_ROOM_CREATE"
-            ? soloRoomManager.create(member)
+            ? soloRoomManager.create(member, settings)
             : soloRoomManager.join(data.roomCode, member);
 
         if (!result.success) {
@@ -378,6 +384,17 @@ wss.on("connection", (ws) => {
         );
       } else if (data.type === "SOLO_ROOM_CHANGE_TEAM") {
         const result = soloRoomManager.changeTeam(socketId, data.teamId);
+        if (!result.success) {
+          ws.send(
+            JSON.stringify({ type: "SOLO_ROOM_ERROR", error: result.error }),
+          );
+        }
+      } else if (data.type === "SOLO_ROOM_UPDATE_SETTINGS") {
+        const result = soloRoomManager.updateRoomSettings(data.roomCode, {
+          mapId: data.mapId,
+          roundDuration: data.roundDuration,
+          botsEnabled: data.botsEnabled,
+        });
         if (!result.success) {
           ws.send(
             JSON.stringify({ type: "SOLO_ROOM_ERROR", error: result.error }),
@@ -410,6 +427,8 @@ wss.on("connection", (ws) => {
           mode: "solo5v5",
           roomCode: result.roomCode,
           botsEnabled: false,
+          mapId: result.settings?.mapId || "neon-grid",
+          roundDuration: result.settings?.roundDuration || 600,
         });
         soloGameRoom.start();
         soloGameRooms.set(result.roomCode, soloGameRoom);

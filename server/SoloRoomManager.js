@@ -10,7 +10,7 @@ class SoloRoomManager {
     this.maxRooms = 200;
   }
 
-  create(member) {
+  create(member, settings = {}) {
     if (this.socketRooms.has(member.socketId)) {
       return { success: false, error: "Bạn đang ở trong một phòng chờ khác." };
     }
@@ -28,6 +28,11 @@ class SoloRoomManager {
       hostSocketId: member.socketId,
       members: new Map(),
       started: false,
+      settings: {
+        mapId: settings.mapId || "neon-grid",
+        roundDuration: settings.roundDuration || 600,
+        botsEnabled: settings.botsEnabled !== false,
+      },
     };
     this.rooms.set(roomCode, room);
     const result = this.addMember(room, member);
@@ -69,17 +74,35 @@ class SoloRoomManager {
     this.socketRooms.set(member.socketId, room.roomCode);
     this.usernameRooms.set(usernameKey, room.roomCode);
     this.broadcastState(room);
-    return { success: true, roomCode: room.roomCode, state: this.getState(room) };
+    return {
+      success: true,
+      roomCode: room.roomCode,
+      state: this.getState(room),
+    };
+  }
+
+  updateRoomSettings(roomCode, settings = {}) {
+    const room = this.rooms.get(this.normalizeCode(roomCode));
+    if (!room) return { success: false, error: "Phòng chờ không tồn tại." };
+    room.settings = {
+      ...room.settings,
+      mapId: settings.mapId || room.settings.mapId || "neon-grid",
+      roundDuration: settings.roundDuration || room.settings.roundDuration || 600,
+      botsEnabled: settings.botsEnabled !== undefined ? settings.botsEnabled : room.settings.botsEnabled,
+    };
+    this.broadcastState(room);
+    return { success: true, state: this.getState(room) };
   }
 
   chooseTeam(room, requestedTeam) {
     const redCount = this.countTeam(room, "red");
     const blueCount = this.countTeam(room, "blue");
-    const teamId = requestedTeam === "red" || requestedTeam === "blue"
-      ? requestedTeam
-      : redCount <= blueCount
-        ? "red"
-        : "blue";
+    const teamId =
+      requestedTeam === "red" || requestedTeam === "blue"
+        ? requestedTeam
+        : redCount <= blueCount
+          ? "red"
+          : "blue";
 
     return this.countTeam(room, teamId) < this.maxTeamSize ? teamId : null;
   }
@@ -185,6 +208,11 @@ class SoloRoomManager {
       blue,
       minTeamSize: this.minTeamSize,
       maxTeamSize: this.maxTeamSize,
+      settings: room.settings || {
+        mapId: "neon-grid",
+        roundDuration: 600,
+        botsEnabled: false,
+      },
       canStart:
         red.length >= this.minTeamSize && blue.length >= this.minTeamSize,
     };

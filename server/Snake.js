@@ -1,10 +1,19 @@
 // server/Snake.js
 
 class Snake {
-  constructor(id, name, color, isBot = false, spawnPos = null, initialAngle = null) {
+  constructor(
+    id,
+    name,
+    color,
+    isBot = false,
+    spawnPos = null,
+    initialAngle = null,
+  ) {
     this.id = id;
-    this.name = name || (isBot ? `Bot-${Math.floor(Math.random() * 900 + 100)}` : 'Player');
-    this.color = color || '#00ffcc';
+    this.name =
+      name ||
+      (isBot ? `Bot-${Math.floor(Math.random() * 900 + 100)}` : "Player");
+    this.color = color || "#00ffcc";
     this.isBot = isBot;
     this.alive = true;
     this.kills = 0;
@@ -30,7 +39,8 @@ class Snake {
     this.boostSpeed = 330;
     this.speed = this.baseSpeed;
     this.isBoosting = false;
-    this.angle = initialAngle !== null ? initialAngle : Math.random() * Math.PI * 2;
+    this.angle =
+      initialAngle !== null ? initialAngle : Math.random() * Math.PI * 2;
     this.targetAngle = this.angle;
     this.turnSpeed = 5.2; // radians/second
 
@@ -88,11 +98,11 @@ class Snake {
     if (!this.alive) return false;
     if (this.inventory[type] && this.inventory[type] > 0) {
       this.inventory[type]--;
-      if (type === 'nitro') {
-        this.activeEffects.nitro = 5.0; // 5s hyper speed without length cost
-      } else if (type === 'vision') {
+      if (type === "nitro") {
+        this.activeEffects.nitro = 3.0;
+      } else if (type === "vision") {
         this.activeEffects.vision = 8.0; // 8s wide eagle-eye vision
-      } else if (type === 'magnet') {
+      } else if (type === "magnet") {
         this.activeEffects.magnet = 6.0; // 6s food magnet
       }
       return true;
@@ -143,8 +153,7 @@ class Snake {
     let droppedPellet = null;
 
     if (this.activeEffects.nitro > 0) {
-      // Hyper Nitro active: 2.2x speed, NO LENGTH LOSS, NO SCORE DROP!
-      this.speed = this.baseSpeed * 2.15;
+      this.speed = this.baseSpeed * 1.9;
     } else if (this.isBoosting && this.body.length > 12) {
       this.speed = this.boostSpeed;
       this.boostDropCooldown += dt;
@@ -179,7 +188,10 @@ class Snake {
     this.updateBodySegments();
 
     // Dynamically adjust radius with length
-    this.radius = Math.min(26, this.baseRadius + Math.floor(this.body.length / 40));
+    this.radius = Math.min(
+      26,
+      this.baseRadius + Math.floor(this.body.length / 40),
+    );
 
     return droppedPellet;
   }
@@ -267,7 +279,10 @@ class Snake {
         const seg = other.body[i];
         const d = Math.hypot(futureHeadX - seg.x, futureHeadY - seg.y);
         if (d < this.radius + other.radius + 50) {
-          const avoidAngle = Math.atan2(this.head.y - seg.y, this.head.x - seg.x);
+          const avoidAngle = Math.atan2(
+            this.head.y - seg.y,
+            this.head.x - seg.x,
+          );
           this.targetAngle = avoidAngle + (Math.random() > 0.5 ? 0.8 : -0.8);
           immediateThreat = true;
           this.isBoosting = this.body.length > 25 && Math.random() < 0.3;
@@ -300,7 +315,10 @@ class Snake {
       }
 
       if (bestFood) {
-        this.targetAngle = Math.atan2(bestFood.y - this.head.y, bestFood.x - this.head.x);
+        this.targetAngle = Math.atan2(
+          bestFood.y - this.head.y,
+          bestFood.x - this.head.x,
+        );
         if (bestFood.v > 5 && minDistSq < 220 * 220 && this.body.length > 30) {
           this.isBoosting = true;
         }
@@ -326,7 +344,7 @@ class Snake {
       isBoosting: this.isBoosting,
       shield: this.shieldTimer > 0,
       length: this.body.length,
-      body: this.body.map(s => ({ x: Math.round(s.x), y: Math.round(s.y) })),
+      body: this.body.map((s) => ({ x: Math.round(s.x), y: Math.round(s.y) })),
       inventory: { ...this.inventory },
       activeEffects: {
         nitro: Number(this.activeEffects.nitro.toFixed(1)),
@@ -361,8 +379,8 @@ class Snake {
       isBoosting: this.isBoosting,
       shield: this.shieldTimer > 0,
       length: this.body.length,
-      body: bodyCompressed,   // Array of [x, y] pairs (compressed)
-      bodyStep,               // Client uses this to know the sampling stride
+      body: bodyCompressed, // Array of [x, y] pairs (compressed)
+      bodyStep, // Client uses this to know the sampling stride
       inventory: { ...this.inventory },
       activeEffects: {
         nitro: Number(this.activeEffects.nitro.toFixed(1)),

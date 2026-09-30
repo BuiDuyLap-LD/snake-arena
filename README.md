@@ -7,30 +7,34 @@ Dự án game **Rắn Săn Mồi Nhiều Người Chơi 2D (Multiplayer Snake Ar
 ## 🌟 Tính Năng Nổi Bật
 
 1. **Kiến Trúc Server-Authoritative (Node.js + WebSockets)**:
-   - Server tính toán toàn bộ logic vật lý (45 Hz): vị trí, góc xoay, tăng tốc (boost), ăn mồi, va chạm và điểm số.
+   - Server tính toán toàn bộ logic vật lý (50 Hz), broadcast ở 25 Hz: vị trí, góc xoay, tăng tốc (boost), ăn mồi, va chạm và điểm số.
    - Chống gian lận (anti-cheat), đồng bộ thời gian thực mượt mà cho 2-4+ người chơi qua mạng LAN hoặc Internet.
 
 2. **Cơ Chế Gameplay Sinh Tồn Gay Cấn**:
    - **Di chuyển & Đổi hướng mượt mà**: Điều khiển theo chuột hoặc cảm ứng trên điện thoại.
-   - **Tăng tốc (Boost/Sprint)**: Nhấn giữ `Space` hoặc `Chuột Trái` để tăng 1.8x tốc độ (tiêu hao nhẹ chiều dài để nhả hạt năng lượng).
+   - **Tăng tốc (Boost/Sprint)**: Nhấn giữ `Space` hoặc `Chuột Trái` để chạy 330 đơn vị/giây (tốc độ cơ bản 190), đổi lại có thể mất chiều dài để nhả hạt năng lượng.
    - **Cơ chế chiến đấu (Combat)**: Đầu rắn đâm vào thân rắn đối thủ sẽ lập tức phát nổ thành chùm mồi năng lượng lớn! Kẻ hạ gục nhận điểm thưởng và hiển thị trên Kill Feed.
    - **Vòng rào năng lượng (Arena Boundary)**: Bản đồ hình tròn với tường năng lượng phát sáng — chạm vào sẽ bị tiêu diệt ngay.
 
 3. **Thức Ăn Đa Dạng (Food Orbs)**:
-   - Hàng trăm viên ngọc năng lượng phát sáng rải rác trên bản đồ.
+   - Khoảng 456–596 viên ngọc năng lượng phát sáng tùy bản đồ; mật độ được cân bằng theo diện tích sân.
    - Thức ăn đặc biệt khi rắn chết tạo thành các điểm nóng (hotspots) thu hút người chơi tranh cướp.
 
 4. **Bot AI Tự Động**:
-   - Tự động duy trì 6-10 rắn trong phòng để trận đấu luôn sôi động ngay cả khi chơi 1 người hoặc khi đợi bạn bè vào phòng.
+   - Duy trì tối đa 6 chiến binh tổng cộng (người chơi và bot) trong phòng thường; phòng Solo 5v5 không có bot.
    - Bot biết né tường, né thân các con rắn khác và săn mồi thông minh.
 
 5. **Bảng Xếp Hạng & Vòng Đấu (Match Rounds)**:
    - Bảng xếp hạng Top 10 thời gian thực trên màn hình với biểu tượng vương miện 👑 cho người dẫn đầu.
-   - Bộ đếm thời gian trận đấu (3 phút/trận).
+   - Bộ đếm thời gian trận đấu mặc định 10 phút; phòng riêng có preset 7, 10 hoặc 15 phút.
    - Màn hình tổng kết (Podium Vàng, Bạc, Đồng) và tự động bắt đầu vòng đấu mới sau thời gian nghỉ.
 
 6. **Âm Thanh Tự Nhiên (Procedural Web Audio API)**:
    - Âm thanh ăn mồi, tăng tốc, nổ tung, diệt địch và kết thúc trận mà không cần tải bất kỳ file mp3 bên ngoài nào.
+
+7. **Cân bằng v1.0**:
+   - Mật độ thức ăn giữa bốn map được chuẩn hóa; Sunfire Arena có sân nhỏ hơn nên nhịp chạm trán dày hơn, Ash Maze có nhiều không gian chạy hơn.
+   - Nitro kéo dài 3 giây ở 1.9x tốc độ cơ bản, không tiêu hao chiều dài; boost thường nhanh 330 đơn vị/giây nhưng có thể tiêu hao chiều dài.
 
 ---
 
@@ -55,21 +59,24 @@ npm start
 
 ### Deploy bằng Render Blueprint
 
-1. Đẩy repository có file `render.yaml` lên GitHub.
-2. Đăng nhập account Render mới, chọn **New > Blueprint**, rồi kết nối repository và branch cần deploy.
-3. Render tạo Web Service miễn phí tại Singapore. Sau khi deploy, mở URL service và kiểm tra `/api/status`.
+1. Tạo Supabase project và chạy [`supabase/schema.sql`](supabase/schema.sql) trước khi deploy.
+2. Đẩy repository có file `render.yaml` lên GitHub.
+3. Trong Render, chọn **New > Blueprint**, kết nối repository/branch, rồi nhập `SUPABASE_URL` và `SUPABASE_SERVICE_ROLE_KEY` khi được yêu cầu. Không đưa service-role key vào Git hoặc frontend.
+4. Sau khi deploy, kiểm tra `/api/status`; trường `storage` phải là `supabase` trước khi mở service cho người chơi.
 
 Free Web Service có thể spin down sau 15 phút không có traffic và cần khoảng một phút để khởi động lại. Filesystem miễn phí là tạm thời, nên dữ liệu tài khoản và bảng xếp hạng trong `server/data` có thể mất khi service restart, spin down hoặc deploy lại. Băng thông vẫn tính theo quota của workspace mới; theo dõi mục **Billing > Monthly Included Usage**, vì nếu chạm quota Render có thể suspend các service miễn phí đến kỳ tiếp theo.
 
 ### Lưu tài khoản và bảng xếp hạng bằng Supabase
 
 1. Tạo project Supabase Free, mở **SQL Editor**, rồi chạy nội dung [`supabase/schema.sql`](supabase/schema.sql).
-2. Trong Render, mở service → **Environment**, thêm `SUPABASE_URL` (Project URL) và `SUPABASE_SERVICE_ROLE_KEY` (secret key phía server). Không đưa key này vào `public/` hoặc commit lên GitHub.
-3. Mặc định, lần khởi động đầu với database trống sẽ tạo tài liệu người dùng rỗng và leaderboard mẫu. Nếu đã rà soát dữ liệu local và muốn nhập `server/data/*.json`, đặt `SUPABASE_IMPORT_LOCAL_JSON=true` trước lần khởi động đầu. Quá trình này xóa token phiên đã lưu, nên người chơi cần đăng nhập lại. Sau khi hai tài liệu được tạo, có thể gỡ biến import.
+2. Blueprint khai báo hai biến môi trường dưới dạng secret không đồng bộ vào Git. Nếu cấu hình service thủ công, thêm `SUPABASE_URL` (Project URL) và `SUPABASE_SERVICE_ROLE_KEY` (secret key phía server).
+3. Mặc định, lần khởi động đầu với database trống sẽ tạo tài liệu người dùng rỗng và leaderboard mẫu. Chỉ đặt `SUPABASE_IMPORT_LOCAL_JSON=true` nếu đã rà soát dữ liệu local và thực sự muốn nhập `server/data/*.json`; quá trình này xóa token phiên đã lưu, người chơi cần đăng nhập lại. Sau khi hai tài liệu được tạo, gỡ biến import.
 
 Server chỉ lưu snapshots của tài khoản và leaderboard vào bảng `game_documents`; game loop, bot, presence và trạng thái trận vẫn ở RAM. Supabase là nguồn dữ liệu chính khi đã cấu hình. Gói Free có giới hạn dung lượng/egress và có thể pause project sau một thời gian không hoạt động; xem [bảng giá Supabase](https://supabase.com/pricing).
 
 **Bảo mật dữ liệu cũ:** `server/data/users.json` đang được Git theo dõi và đã có bản ghi trong lịch sử repository public. Cờ import chỉ xóa token phiên; nó không xóa password hash khỏi Git history. Hãy xem xét reset mật khẩu người chơi và dọn dữ liệu nhạy cảm khỏi repository trước khi coi các tài khoản cũ là an toàn.
+
+**Lưu ý trước production v1.0:** mật khẩu tài khoản cũ đang dùng SHA-256 với salt tĩnh, mật khẩu mới hiện chỉ cần 3 ký tự, và hash cũ đã xuất hiện trong Git history. Reset mật khẩu hiện có, dọn lịch sử nhạy cảm, nâng mức yêu cầu mật khẩu và chuyển sang password hashing chậm với salt riêng trước khi mở đăng ký công khai. Shop, tiền tệ, Battle Pass và cấp rắn hiện lưu trong `localStorage` trên từng trình duyệt, không phải dữ liệu tài khoản đồng bộ/server-authoritative; không coi các chỉ số này là lợi thế gameplay hoặc giá trị mua bán trong ranked.
 
 ### Chia sẻ game miễn phí qua Cloudflare Quick Tunnel
 
@@ -106,7 +113,7 @@ MoBa5v5/
 ├── package.json          # Thiết lập dự án & dependencies (express, ws)
 ├── server/
 │   ├── server.js         # HTTP Server & WebSocket Server
-│   ├── GameRoom.js       # Game Loop (45Hz), va chạm, vòng đấu & broadcast
+│   ├── GameRoom.js       # Game Loop (50Hz), va chạm, vòng đấu & broadcast
 │   ├── Snake.js          # Lớp Snake (vật lý, tăng trưởng, AI Bot)
 │   └── FoodManager.js    # Quản lý mồi thường & mồi rơi từ rắn chết
 └── public/

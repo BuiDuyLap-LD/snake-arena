@@ -552,6 +552,15 @@ class GameClient {
     return this.selectedMapId || "neon-grid";
   }
 
+  getSoloRulePreset() {
+    const presets = {
+      classic: { roundDuration: 600, foodCount: 500 },
+      speed: { roundDuration: 420, foodCount: 600 },
+      long: { roundDuration: 900, foodCount: 520 },
+    };
+    return presets[this.selectedSoloRule] || presets.classic;
+  }
+
   initDOM() {
     this.canvas = document.getElementById("game-canvas");
     this.minimapCanvas = document.getElementById("minimap-canvas");
@@ -586,6 +595,8 @@ class GameClient {
     this.shopShards = document.getElementById("shop-shards");
     this.shopTickets = document.getElementById("shop-tickets");
     this.mapOptions = document.querySelectorAll(".map-option");
+    this.soloRuleOptions = document.querySelectorAll(".solo-rule-option");
+    this.soloRoomRulesPanel = document.getElementById("solo-room-rules");
     this.battlePassFill = document.getElementById("battle-pass-fill");
     this.battlePassGrid = document.getElementById("battle-pass-grid");
     this.battlePassLevelLabel = document.getElementById("battle-pass-level-label");
@@ -863,6 +874,9 @@ class GameClient {
     }
     if (this.soloRoomEntry) {
       this.soloRoomEntry.classList.toggle("hidden", mode !== "solo5v5");
+    }
+    if (this.soloRoomRulesPanel) {
+      this.soloRoomRulesPanel.classList.toggle("hidden", mode !== "solo5v5");
     }
     if (this.lobbyInviteBox) {
       this.lobbyInviteBox.classList.toggle("hidden", mode === "solo5v5");
@@ -1474,6 +1488,7 @@ class GameClient {
           token: this.authToken || null,
           mode: this.activeGameMode,
           mapId: this.getSelectedMapIdForMode(),
+          soloRule: this.selectedSoloRule,
         }),
       );
     };
@@ -3114,6 +3129,17 @@ class GameClient {
         this.showToast(`🗺️ Bản đồ đã chọn: ${this.selectedMapId.replace("-", " ")}`);
       });
     });
+
+    if (this.soloRuleOptions) {
+      this.soloRuleOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          this.soloRuleOptions.forEach((item) => item.classList.remove("active"));
+          option.classList.add("active");
+          this.selectedSoloRule = option.dataset.rule || "classic";
+          this.showToast(`⚙️ Chế độ phòng riêng: ${this.selectedSoloRule}`);
+        });
+      });
+    }
 
     if (this.btnSoloRoomJoin) {
       this.btnSoloRoomJoin.addEventListener("click", () =>

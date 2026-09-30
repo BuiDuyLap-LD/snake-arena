@@ -8,10 +8,34 @@ const accountManager = require("./AccountManager");
 
 class GameRoom {
   static MAP_PRESETS = {
-    "neon-grid": { id: "neon-grid", label: "Neon Grid", arenaRadius: 2200, foodCount: 500, powerupCount: 14 },
-    "ash-maze": { id: "ash-maze", label: "Ash Maze", arenaRadius: 2400, foodCount: 560, powerupCount: 16 },
-    "crystal-lake": { id: "crystal-lake", label: "Crystal Lake", arenaRadius: 2300, foodCount: 540, powerupCount: 15 },
-    "sunfire-arena": { id: "sunfire-arena", label: "Sunfire Arena", arenaRadius: 2100, foodCount: 500, powerupCount: 14 },
+    "neon-grid": {
+      id: "neon-grid",
+      label: "Neon Grid",
+      arenaRadius: 2200,
+      foodCount: 500,
+      powerupCount: 14,
+    },
+    "ash-maze": {
+      id: "ash-maze",
+      label: "Ash Maze",
+      arenaRadius: 2400,
+      foodCount: 596,
+      powerupCount: 17,
+    },
+    "crystal-lake": {
+      id: "crystal-lake",
+      label: "Crystal Lake",
+      arenaRadius: 2300,
+      foodCount: 549,
+      powerupCount: 15,
+    },
+    "sunfire-arena": {
+      id: "sunfire-arena",
+      label: "Sunfire Arena",
+      arenaRadius: 2100,
+      foodCount: 456,
+      powerupCount: 13,
+    },
   };
 
   constructor(roomId = "arena-main", options = {}) {
@@ -30,7 +54,7 @@ class GameRoom {
     this.nextBotId = 1;
 
     // Match round system
-    this.roundDuration = 600; // 10 minutes per round
+    this.roundDuration = options.roundDuration || 600;
     this.timeRemaining = this.roundDuration;
     this.isIntermission = false;
     this.intermissionDuration = 8;
@@ -144,15 +168,27 @@ class GameRoom {
   }
 
   setMap(mapId) {
-    const preset = GameRoom.MAP_PRESETS[mapId] || GameRoom.MAP_PRESETS["neon-grid"];
+    if (this.players?.size) return false;
+
+    const preset =
+      GameRoom.MAP_PRESETS[mapId] || GameRoom.MAP_PRESETS["neon-grid"];
     this.mapId = preset.id;
     this.mapConfig = preset;
     this.arenaRadius = preset.arenaRadius || 2200;
-    this.foodManager = new FoodManager(this.arenaRadius, preset.foodCount || 500);
-    this.powerupManager = new PowerupManager(this.arenaRadius, preset.powerupCount || 14);
+    this.foodManager = new FoodManager(
+      this.arenaRadius,
+      preset.foodCount || 500,
+    );
+    this.powerupManager = new PowerupManager(
+      this.arenaRadius,
+      preset.powerupCount || 14,
+    );
     this.powerupsDirty = true;
     this.lastPowerupsJson = "";
-    console.log(`[GameRoom] Map set to ${preset.label} (${this.mapId}) for room ${this.roomId}.`);
+    console.log(
+      `[GameRoom] Map set to ${preset.label} (${this.mapId}) for room ${this.roomId}.`,
+    );
+    return true;
   }
 
   start() {
@@ -551,8 +587,14 @@ class GameRoom {
   startNewRound() {
     this.isIntermission = false;
     this.timeRemaining = this.roundDuration;
-    this.foodManager = new FoodManager(this.arenaRadius, 500);
-    this.powerupManager = new PowerupManager(this.arenaRadius, 14);
+    this.foodManager = new FoodManager(
+      this.arenaRadius,
+      this.mapConfig.foodCount,
+    );
+    this.powerupManager = new PowerupManager(
+      this.arenaRadius,
+      this.mapConfig.powerupCount,
+    );
 
     const allSnakes = [];
     for (const [id, player] of this.players.entries()) {
