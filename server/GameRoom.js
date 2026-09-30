@@ -7,15 +7,21 @@ const leaderboardManager = require("./LeaderboardManager");
 const accountManager = require("./AccountManager");
 
 class GameRoom {
+  static MAP_PRESETS = {
+    "neon-grid": { id: "neon-grid", label: "Neon Grid", arenaRadius: 2200, foodCount: 500, powerupCount: 14 },
+    "ash-maze": { id: "ash-maze", label: "Ash Maze", arenaRadius: 2400, foodCount: 560, powerupCount: 16 },
+    "crystal-lake": { id: "crystal-lake", label: "Crystal Lake", arenaRadius: 2300, foodCount: 540, powerupCount: 15 },
+    "sunfire-arena": { id: "sunfire-arena", label: "Sunfire Arena", arenaRadius: 2100, foodCount: 500, powerupCount: 14 },
+  };
+
   constructor(roomId = "arena-main", options = {}) {
     this.roomId = roomId;
     this.roomCode = options.roomCode || roomId;
     this.mode = options.mode || "ranked";
     this.botsEnabled = options.botsEnabled !== false;
     this.recordStats = options.recordStats !== false;
-    this.arenaRadius = 2200;
-    this.foodManager = new FoodManager(this.arenaRadius, 500);
-    this.powerupManager = new PowerupManager(this.arenaRadius, 14);
+    this.mapId = options.mapId || "neon-grid";
+    this.setMap(this.mapId);
 
     this.players = new Map(); // ws/id -> { ws, snake }
     this.bots = new Map(); // botId -> snake
@@ -135,6 +141,18 @@ class GameRoom {
       this.bots.set(botId, bot);
       allSnakes.push(bot);
     }
+  }
+
+  setMap(mapId) {
+    const preset = GameRoom.MAP_PRESETS[mapId] || GameRoom.MAP_PRESETS["neon-grid"];
+    this.mapId = preset.id;
+    this.mapConfig = preset;
+    this.arenaRadius = preset.arenaRadius || 2200;
+    this.foodManager = new FoodManager(this.arenaRadius, preset.foodCount || 500);
+    this.powerupManager = new PowerupManager(this.arenaRadius, preset.powerupCount || 14);
+    this.powerupsDirty = true;
+    this.lastPowerupsJson = "";
+    console.log(`[GameRoom] Map set to ${preset.label} (${this.mapId}) for room ${this.roomId}.`);
   }
 
   start() {
@@ -385,11 +403,7 @@ class GameRoom {
         if (!s2.alive) continue;
 
         if (s1.id !== s2.id) {
-          if (
-            this.mode === "solo5v5" &&
-            s1.teamId &&
-            s1.teamId === s2.teamId
-          ) {
+          if (this.mode === "solo5v5" && s1.teamId && s1.teamId === s2.teamId) {
             continue;
           }
           if (s1.isShielded() || s2.isShielded()) {
@@ -512,7 +526,11 @@ class GameRoom {
         redScore: totals.red,
         blueScore: totals.blue,
         winnerTeam:
-          totals.red === totals.blue ? null : totals.red > totals.blue ? "red" : "blue",
+          totals.red === totals.blue
+            ? null
+            : totals.red > totals.blue
+              ? "red"
+              : "blue",
       };
     }
 

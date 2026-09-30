@@ -392,7 +392,8 @@ wss.on("connection", (ws) => {
           ws.send(
             JSON.stringify({
               type: "SOLO_ROOM_ERROR",
-              error: "Máy chủ đang chạy tối đa 2 trận Solo. Vui lòng thử lại sau.",
+              error:
+                "Máy chủ đang chạy tối đa 2 trận Solo. Vui lòng thử lại sau.",
             }),
           );
           return;
@@ -415,9 +416,7 @@ wss.on("connection", (ws) => {
         for (const member of result.members) {
           member.startGame(soloGameRoom, member.teamId);
         }
-      }
-
-      else if (data.type === "JOIN_GAME") {
+      } else if (data.type === "JOIN_GAME") {
         if (hasJoinedGame) return;
         const playerName = (data.name || "Snake").substring(0, 16).trim();
         const playerColor = data.color || "#00ffcc";
@@ -445,7 +444,9 @@ wss.on("connection", (ws) => {
         }
         const accountUsername = user.username;
         socialManager.authenticateSocket(socketId, data.token, user.username);
+        const mapId = data.mapId || "neon-grid";
         joinedRoom = data.mode === "casual" ? casualRoom : gameRoom;
+        joinedRoom.setMap(mapId);
         joinedRoom.start();
 
         socialManager.setSocketStatus(
@@ -470,10 +471,7 @@ wss.on("connection", (ws) => {
         if (joinedRoom === casualRoom && casualRoom.players.size === 0) {
           casualRoom.stop();
         }
-        if (
-          leavingRoom.mode === "solo5v5" &&
-          leavingRoom.players.size === 0
-        ) {
+        if (leavingRoom.mode === "solo5v5" && leavingRoom.players.size === 0) {
           leavingRoom.stop();
           soloGameRooms.delete(leavingRoom.roomCode);
         }
@@ -603,10 +601,7 @@ wss.on("connection", (ws) => {
       if (joinedRoom === casualRoom && casualRoom.players.size === 0) {
         casualRoom.stop();
       }
-      if (
-        closingRoom.mode === "solo5v5" &&
-        closingRoom.players.size === 0
-      ) {
+      if (closingRoom.mode === "solo5v5" && closingRoom.players.size === 0) {
         closingRoom.stop();
         soloGameRooms.delete(closingRoom.roomCode);
       }

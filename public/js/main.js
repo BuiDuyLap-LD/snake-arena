@@ -20,7 +20,14 @@ class GameClient {
     this.roomCode = "ARENA-5V5";
     this.selectedGameMode = "ranked";
     this.activeGameMode = "ranked";
+    this.selectedMapId = "neon-grid";
     this.soloRoomState = null;
+    this.mapPresets = [
+      { id: "neon-grid", label: "Neon Grid", icon: "🌃", arenaRadius: 2200 },
+      { id: "ash-maze", label: "Ash Maze", icon: "🧭", arenaRadius: 2400 },
+      { id: "crystal-lake", label: "Crystal Lake", icon: "💎", arenaRadius: 2300 },
+      { id: "sunfire-arena", label: "Sunfire Arena", icon: "🔥", arenaRadius: 2100 },
+    ];
 
     // Account & Authentication
     this.currentUser = null;
@@ -537,6 +544,14 @@ class GameClient {
     return "🥉 Đồng";
   }
 
+  getSelectedMapIdForMode() {
+    if (this.selectedGameMode === "ranked") {
+      const pool = this.mapPresets.map((map) => map.id);
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    return this.selectedMapId || "neon-grid";
+  }
+
   initDOM() {
     this.canvas = document.getElementById("game-canvas");
     this.minimapCanvas = document.getElementById("minimap-canvas");
@@ -570,6 +585,7 @@ class GameClient {
     this.shopCoins = document.getElementById("shop-coins");
     this.shopShards = document.getElementById("shop-shards");
     this.shopTickets = document.getElementById("shop-tickets");
+    this.mapOptions = document.querySelectorAll(".map-option");
     this.battlePassFill = document.getElementById("battle-pass-fill");
     this.battlePassGrid = document.getElementById("battle-pass-grid");
     this.battlePassLevelLabel = document.getElementById("battle-pass-level-label");
@@ -1457,6 +1473,7 @@ class GameClient {
           room: this.roomCode,
           token: this.authToken || null,
           mode: this.activeGameMode,
+          mapId: this.getSelectedMapIdForMode(),
         }),
       );
     };
@@ -3087,6 +3104,15 @@ class GameClient {
       button.addEventListener("click", () =>
         this.setGameMode(button.dataset.mode),
       );
+    });
+
+    this.mapOptions.forEach((option) => {
+      option.addEventListener("click", () => {
+        this.mapOptions.forEach((item) => item.classList.remove("active"));
+        option.classList.add("active");
+        this.selectedMapId = option.dataset.mapId || "neon-grid";
+        this.showToast(`🗺️ Bản đồ đã chọn: ${this.selectedMapId.replace("-", " ")}`);
+      });
     });
 
     if (this.btnSoloRoomJoin) {
