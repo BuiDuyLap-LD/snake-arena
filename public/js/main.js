@@ -30,6 +30,8 @@ class GameClient {
     this.friendRequests = [];
     this.activePrivateChatUser = null;
     this.activeFriendsTab = "friends"; // 'friends', 'requests', 'search', 'lobbychat'
+    this.lobbyView = "play";
+    this.friendsDataLoaded = false;
     this.currentMatchRankings = [];
     this.likedPlayers = new Set();
     this.confettiRunning = false;
@@ -131,6 +133,9 @@ class GameClient {
     // Friends Hub Button in Header
     this.btnOpenFriends = document.getElementById("btn-open-friends");
     this.friendsBadgeOnline = document.getElementById("friends-badge-online");
+    this.btnLobbyPlayView = document.getElementById("btn-lobby-play-view");
+    this.btnLobbyChatView = document.getElementById("btn-lobby-chat-view");
+    this.lobbySocialBadge = document.getElementById("lobby-social-badge");
 
     // Account Widget Elements
     this.btnOpenAuth = document.getElementById("btn-open-auth");
@@ -553,6 +558,7 @@ class GameClient {
           this.friendRequests = msg.requests;
           this.renderFriendRequests();
         }
+        this.friendsDataLoaded = true;
         this.updateFriendsBadge();
         break;
 
@@ -717,6 +723,7 @@ class GameClient {
       case "FRIEND_LIST_UPDATE":
         if (msg.friends) this.friends = msg.friends;
         if (msg.requests) this.friendRequests = msg.requests;
+        this.friendsDataLoaded = true;
         this.renderFriendsList();
         this.renderFriendRequests();
         this.updateFriendsBadge();
@@ -1266,11 +1273,26 @@ class GameClient {
 
   // ================= FRIENDS & SOCIAL HUB =================
 
+  setLobbyView(view) {
+    this.lobbyView = view === "chat" ? "chat" : "play";
+    const showingChat = this.lobbyView === "chat";
+
+    if (this.btnLobbyPlayView) {
+      this.btnLobbyPlayView.classList.toggle("active", !showingChat);
+      this.btnLobbyPlayView.setAttribute("aria-pressed", String(!showingChat));
+    }
+    if (this.btnLobbyChatView) {
+      this.btnLobbyChatView.classList.toggle("active", showingChat);
+      this.btnLobbyChatView.setAttribute("aria-pressed", String(showingChat));
+    }
+  }
+
   openFriendsModal() {
     if (this.modalFriends) {
+      this.setLobbyView("chat");
       this.closePrivateChat();
       this.modalFriends.classList.remove("hidden");
-      if (this.currentUser) {
+      if (this.currentUser && !this.friendsDataLoaded) {
         this.loadFriendsData();
       }
       this.switchFriendsTab(this.activeFriendsTab);
@@ -1281,6 +1303,7 @@ class GameClient {
     if (this.modalFriends) {
       this.closePrivateChat();
       this.modalFriends.classList.add("hidden");
+      this.setLobbyView("play");
     }
   }
 
@@ -1343,6 +1366,7 @@ class GameClient {
         if (rData.success) this.friendRequests = rData.requests || [];
       }
 
+      this.friendsDataLoaded = fRes.ok && rRes.ok;
       this.renderFriendsList();
       this.renderFriendRequests();
       this.updateFriendsBadge();
@@ -1373,6 +1397,11 @@ class GameClient {
             : `🟢 ${onlineCount}`
           : "0";
       this.friendsBadgeOnline.classList.toggle("hidden", totalAlerts === 0);
+    }
+
+    if (this.lobbySocialBadge) {
+      this.lobbySocialBadge.textContent = String(reqCount);
+      this.lobbySocialBadge.classList.toggle("hidden", reqCount === 0);
     }
   }
 
@@ -1833,15 +1862,26 @@ class GameClient {
 
     const date = new Date(msg.time || Date.now());
     const timeStr = `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+    const header = document.createElement("div");
+    header.className = "chat-msg-header";
+    const sender = document.createElement("span");
+    sender.className = "chat-sender-name";
+    sender.textContent = msg.sender || "Người chơi";
+    if (/^#[\da-f]{6}$/i.test(msg.senderSkin || "")) {
+      sender.style.color = msg.senderSkin;
+    }
+    const tier = document.createElement("span");
+    tier.className = "chat-sender-tier";
+    tier.textContent = msg.senderTier || "Dũng Sĩ";
+    const time = document.createElement("span");
+    time.className = "chat-msg-time";
+    time.textContent = timeStr;
+    header.append(sender, tier, time);
 
-    row.innerHTML = `
-      <div class="chat-msg-header">
-        <span class="chat-sender-name" style="color: ${msg.senderSkin || "#00f0ff"};">${msg.sender}</span>
-        <span class="chat-sender-tier">${msg.senderTier || "Dũng Sĩ"}</span>
-        <span class="chat-msg-time">${timeStr}</span>
-      </div>
-      <div class="chat-msg-bubble">${msg.text}</div>
-    `;
+    const bubble = document.createElement("div");
+    bubble.className = "chat-msg-bubble";
+    bubble.textContent = msg.text || "";
+    row.append(header, bubble);
 
     this.lobbyChatMessagesEl.appendChild(row);
     this.lobbyChatMessagesEl.scrollTop = this.lobbyChatMessagesEl.scrollHeight;
@@ -1952,14 +1992,20 @@ class GameClient {
 
     const date = new Date(msg.time || Date.now());
     const timeStr = `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+    const header = document.createElement("div");
+    header.className = "chat-msg-header";
+    const sender = document.createElement("span");
+    sender.className = "chat-sender-name";
+    sender.textContent = msg.sender || "Người chơi";
+    const time = document.createElement("span");
+    time.className = "chat-msg-time";
+    time.textContent = timeStr;
+    header.append(sender, time);
 
-    row.innerHTML = `
-      <div class="chat-msg-header">
-        <span class="chat-sender-name">${msg.sender}</span>
-        <span class="chat-msg-time">${timeStr}</span>
-      </div>
-      <div class="chat-msg-bubble">${msg.text}</div>
-    `;
+    const bubble = document.createElement("div");
+    bubble.className = "chat-msg-bubble";
+    bubble.textContent = msg.text || "";
+    row.append(header, bubble);
 
     this.privateChatMessagesEl.appendChild(row);
     this.privateChatMessagesEl.scrollTop =
@@ -2382,6 +2428,14 @@ class GameClient {
       this.btnLogout.addEventListener("click", () => this.handleLogout());
 
     // Friends Modal Events
+    if (this.btnLobbyPlayView)
+      this.btnLobbyPlayView.addEventListener("click", () =>
+        this.closeFriendsModal(),
+      );
+    if (this.btnLobbyChatView)
+      this.btnLobbyChatView.addEventListener("click", () =>
+        this.openFriendsModal(),
+      );
     if (this.btnOpenFriends)
       this.btnOpenFriends.addEventListener("click", () =>
         this.openFriendsModal(),

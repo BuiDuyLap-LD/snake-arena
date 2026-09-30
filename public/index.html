@@ -81,6 +81,31 @@
           </div>
         </header>
 
+        <nav class="lobby-primary-nav" aria-label="Khu vực chính">
+          <button
+            id="btn-lobby-play-view"
+            class="lobby-primary-tab active"
+            type="button"
+            aria-pressed="true"
+          >
+            <span aria-hidden="true">⚔️</span> Chơi
+          </button>
+          <button
+            id="btn-lobby-chat-view"
+            class="lobby-primary-tab"
+            type="button"
+            aria-pressed="false"
+          >
+            <span aria-hidden="true">💬</span> Trò chuyện
+            <span
+              id="lobby-social-badge"
+              class="lobby-chat-badge hidden"
+              title="Lời mời kết bạn"
+              >0</span
+            >
+          </button>
+        </nav>
+
         <!-- Lobby Main Grid -->
         <div class="lobby-grid">
           <!-- Left Panel: Player Setup & Party / Room -->
@@ -692,7 +717,7 @@
     </div>
 
     <!-- ================= MODAL: FRIENDS & SOCIAL HUB ================= -->
-    <div id="modal-friends" class="modal-overlay hidden">
+    <div id="modal-friends" class="modal-overlay chat-screen-overlay hidden">
       <div class="modal-content friends-modal-card">
         <!-- Friends Header -->
         <div class="friends-modal-header">
@@ -705,8 +730,13 @@
               </p>
             </div>
           </div>
-          <button id="btn-close-friends" class="modal-close-btn" title="Đóng">
-            ✕
+          <button
+            id="btn-close-friends"
+            class="chat-back-to-play"
+            type="button"
+            aria-label="Quay lại khu chơi"
+          >
+            <span aria-hidden="true">←</span> Khu chơi
           </button>
         </div>
 
