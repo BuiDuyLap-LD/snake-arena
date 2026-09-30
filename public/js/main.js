@@ -53,6 +53,7 @@ class GameClient {
         id: "starter-cyan",
         name: "Neon Cyan",
         type: "skin",
+        icon: "🟦",
         rarity: "BASIC",
         price: { coins: 120 },
         bonus: "+2% Speed",
@@ -62,6 +63,7 @@ class GameClient {
         id: "blaze-red",
         name: "Crimson Blaze",
         type: "skin",
+        icon: "🔴",
         rarity: "RARE",
         price: { coins: 220, shards: 2 },
         bonus: "+3% Boost",
@@ -71,6 +73,7 @@ class GameClient {
         id: "trail-fire",
         name: "Trail Fire",
         type: "trail",
+        icon: "🔥",
         rarity: "RARE",
         price: { coins: 180 },
         bonus: "Trail lửa",
@@ -80,6 +83,7 @@ class GameClient {
         id: "booster-pack",
         name: "Booster Pack",
         type: "utility",
+        icon: "⚡",
         rarity: "EPIC",
         price: { coins: 260, tickets: 1 },
         bonus: "+1 Booster",
@@ -210,6 +214,14 @@ class GameClient {
     this.renderPlayerProgress();
   }
 
+  canAffordItem(item) {
+    return (
+      (this.playerProgress.coins || 0) >= (item.price.coins || 0) &&
+      (this.playerProgress.shards || 0) >= (item.price.shards || 0) &&
+      (this.playerProgress.tickets || 0) >= (item.price.tickets || 0)
+    );
+  }
+
   buyShopItem(itemId) {
     const item = this.shopCatalog.find((entry) => entry.id === itemId);
     if (!item) return;
@@ -217,16 +229,7 @@ class GameClient {
       this.showToast(`🧩 ${item.name} đã có trong bộ sưu tập.`);
       return;
     }
-    const totalCost =
-      (item.price.coins || 0) +
-      (item.price.shards || 0) * 30 +
-      (item.price.tickets || 0) * 50;
-    const walletValue =
-      this.playerProgress.coins +
-      this.playerProgress.shards * 30 +
-      this.playerProgress.tickets * 50;
-
-    if (walletValue < totalCost) {
+    if (!this.canAffordItem(item)) {
       this.showToast("⚠️ Không đủ tài nguyên để mua vật phẩm này.");
       return;
     }
@@ -248,6 +251,7 @@ class GameClient {
     this.shopGrid.innerHTML = "";
     this.shopCatalog.forEach((item) => {
       const owned = this.playerProgress.ownedItems.includes(item.id);
+      const affordable = this.canAffordItem(item);
       const card = document.createElement("div");
       card.className = "shop-item-card";
       card.innerHTML = `
@@ -255,6 +259,7 @@ class GameClient {
           <span class="shop-item-badge ${item.rarity.toLowerCase()}">${item.rarity}</span>
           <span class="shop-item-type">${item.type}</span>
         </div>
+        <div class="shop-item-icon" aria-hidden="true">${item.icon || "✨"}</div>
         <div class="shop-item-name">${item.name}</div>
         <div class="shop-item-bonus">${item.bonus}</div>
         <p class="shop-item-desc">${item.description}</p>
@@ -263,8 +268,8 @@ class GameClient {
           <span>💎 ${item.price.shards || 0}</span>
           <span>🎫 ${item.price.tickets || 0}</span>
         </div>
-        <button class="btn-buy-item" data-item-id="${item.id}" ${owned ? "disabled" : ""}>
-          ${owned ? "Đã sở hữu" : "Mua ngay"}
+        <button class="btn-buy-item" data-item-id="${item.id}" ${owned || !affordable ? "disabled" : ""}>
+          ${owned ? "Đã sở hữu" : !affordable ? "Thiếu tài nguyên" : "Mua ngay"}
         </button>
       `;
       this.shopGrid.appendChild(card);
