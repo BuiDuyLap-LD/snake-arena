@@ -37,16 +37,19 @@ Dự án game **Rắn Săn Mồi Nhiều Người Chơi 2D (Multiplayer Snake Ar
 ## 🚀 Hướng Dẫn Khởi Chạy
 
 ### 1. Cài đặt thư viện:
+
 ```bash
 npm install
 ```
 
 ### 2. Khởi động Server:
+
 ```bash
 npm start
 ```
 
 ### 3. Tham gia trò chơi:
+
 - **Trên máy chủ (Localhost)**: Mở trình duyệt và truy cập [http://localhost:3000](http://localhost:3000)
 - **Chơi nhiều người trên cùng mạng Wifi/LAN**: Các thiết bị khác (Laptop, Điện thoại) chỉ cần mở trình duyệt và truy cập vào IP của máy chủ hiển thị trên terminal (ví dụ: `http://192.168.x.x:3000`).
 
@@ -87,12 +90,12 @@ Giữ cả hai terminal chạy và không để máy tính ngủ. Đây là tunn
 
 ## 🎮 Hướng Dẫn Điều Khiển
 
-| Thao Tác | Phím / Chuột | Cảm Ứng (Điện Thoại) |
-|---|---|---|
-| **Điều hướng** | Di chuột theo hướng muốn di chuyển | Chạm/kéo trên màn hình |
-| **Tăng tốc (Boost)** | Giữ `Space` hoặc `Chuột Trái` | Giữ nút `⚡ TỐC` ở góc phải |
-| **Bật/Tắt âm thanh** | Nút `🔊` ở góc dưới bên phải | Nút `🔊` ở góc dưới bên phải |
-| **Hồi sinh (Respawn)**| Nhấn nút "Hồi Sinh & Tiếp Tục Chiến Đấu" | Nhấn nút hồi sinh |
+| Thao Tác               | Phím / Chuột                             | Cảm Ứng (Điện Thoại)         |
+| ---------------------- | ---------------------------------------- | ---------------------------- |
+| **Điều hướng**         | Di chuột theo hướng muốn di chuyển       | Chạm/kéo trên màn hình       |
+| **Tăng tốc (Boost)**   | Giữ `Space` hoặc `Chuột Trái`            | Giữ nút `⚡ TỐC` ở góc phải  |
+| **Bật/Tắt âm thanh**   | Nút `🔊` ở góc dưới bên phải             | Nút `🔊` ở góc dưới bên phải |
+| **Hồi sinh (Respawn)** | Nhấn nút "Hồi Sinh & Tiếp Tục Chiến Đấu" | Nhấn nút hồi sinh            |
 
 ---
 

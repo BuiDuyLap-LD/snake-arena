@@ -4,6 +4,7 @@ class GameClient {
   constructor() {
     this.ws = null;
     this.localPlayerId = null;
+    this.socketId = null;
     this.arenaRadius = 2200;
 
     // Delta food storage on client
@@ -19,6 +20,7 @@ class GameClient {
     this.roomCode = "ARENA-5V5";
     this.selectedGameMode = "ranked";
     this.activeGameMode = "ranked";
+    this.soloRoomState = null;
 
     // Account & Authentication
     this.currentUser = null;
@@ -108,6 +110,7 @@ class GameClient {
     this.screenLobby = document.getElementById("screen-lobby");
     this.modalDeath = document.getElementById("modal-death");
     this.modalMatchOver = document.getElementById("modal-match-over");
+    this.modalSoloRoom = document.getElementById("modal-solo-room");
     this.modalAuth = document.getElementById("modal-auth");
     this.modalFriends = document.getElementById("modal-friends");
     this.modalProfileCard = document.getElementById("modal-profile-card");
@@ -117,6 +120,23 @@ class GameClient {
     // Lobby Elements
     this.inputName = document.getElementById("player-name");
     this.btnJoin = document.getElementById("btn-join");
+    this.modeSolo5v5 = document.getElementById("mode-solo5v5");
+    this.soloRoomEntry = document.getElementById("solo-room-entry");
+    this.inputSoloRoomCode = document.getElementById("input-solo-room-code");
+    this.btnSoloRoomJoin = document.getElementById("btn-solo-room-join");
+    this.lobbyInviteBox = document.getElementById("lobby-invite-box");
+    this.btnSoloRoomLeave = document.getElementById("btn-solo-room-leave");
+    this.soloRoomCodeLabel = document.getElementById("solo-room-code-label");
+    this.btnSoloRoomCopy = document.getElementById("btn-solo-room-copy");
+    this.btnSoloRoomInvite = document.getElementById("btn-solo-room-invite");
+    this.soloRedCount = document.getElementById("solo-red-count");
+    this.soloBlueCount = document.getElementById("solo-blue-count");
+    this.soloRedRoster = document.getElementById("solo-red-roster");
+    this.soloBlueRoster = document.getElementById("solo-blue-roster");
+    this.btnSoloTeamRed = document.getElementById("btn-solo-team-red");
+    this.btnSoloTeamBlue = document.getElementById("btn-solo-team-blue");
+    this.soloRoomStatus = document.getElementById("solo-room-status");
+    this.btnSoloRoomStart = document.getElementById("btn-solo-room-start");
     this.skinOptions = document.querySelectorAll(".skin-option");
     this.avatarPreview = document.getElementById("snake-avatar-preview");
     this.myTierBadge = document.getElementById("my-tier-badge");
@@ -164,6 +184,7 @@ class GameClient {
     // In-Game HUD Elements
     this.timerEl = document.getElementById("match-timer");
     this.playerCountEl = document.getElementById("player-count");
+    this.teamSideBadge = document.getElementById("team-side-badge");
     this.leaderboardEl = document.getElementById("leaderboard-list");
     this.leaderboardPanel = document.getElementById("leaderboard-panel");
     this.leaderboardToggle = document.getElementById("leaderboard-toggle");
@@ -196,9 +217,16 @@ class GameClient {
     this.deathKillsEl = document.getElementById("death-kills");
 
     // ================= ENHANCED MATCH OVER DOM =================
+    this.matchOverCard = document.querySelector(".match-over-card");
     this.matchOverTrophy = document.getElementById("match-over-trophy");
     this.matchOverTitle = document.getElementById("match-over-title");
     this.matchOverSubtitle = document.getElementById("match-over-subtitle");
+    this.matchOverMode = document.getElementById("match-over-mode");
+    this.matchOverRoom = document.getElementById("match-over-room");
+    this.soloResultPanel = document.getElementById("solo-result-panel");
+    this.soloRedResultScore = document.getElementById("solo-red-result-score");
+    this.soloBlueResultScore = document.getElementById("solo-blue-result-score");
+    this.soloWinnerBanner = document.getElementById("solo-winner-banner");
     this.podiumFirst = document.getElementById("podium-first");
     this.podiumSecond = document.getElementById("podium-second");
     this.podiumThird = document.getElementById("podium-third");
@@ -329,13 +357,16 @@ class GameClient {
       this.connectWebSocket();
     }
     const modeParam = urlParams.get("mode");
-    if (modeParam === "casual" || modeParam === "ranked") {
+    if (["casual", "ranked", "solo5v5"].includes(modeParam)) {
       this.setGameMode(modeParam, false);
+    }
+    if (roomParam && this.inputSoloRoomCode) {
+      this.inputSoloRoomCode.value = this.roomCode;
     }
   }
 
   setGameMode(mode, showToast = true) {
-    if (mode !== "ranked" && mode !== "casual") return;
+    if (!["ranked", "casual", "solo5v5"].includes(mode)) return;
     this.selectedGameMode = mode;
     document.querySelectorAll(".mode-select-card").forEach((button) => {
       const selected = button.dataset.mode === mode;
@@ -344,20 +375,175 @@ class GameClient {
     });
     const joinLabel = document.getElementById("join-mode-label");
     if (joinLabel) {
-      joinLabel.textContent =
-        mode === "ranked" ? "VÀO XẾP HẠNG" : "VÀO ĐẤU THƯỜNG";
+      joinLabel.textContent = {
+        ranked: "VÀO XẾP HẠNG",
+        casual: "VÀO ĐẤU THƯỜNG",
+        solo5v5: "TẠO PHÒNG SOLO 5V5",
+      }[mode];
+    }
+    if (this.soloRoomEntry) {
+      this.soloRoomEntry.classList.toggle("hidden", mode !== "solo5v5");
+    }
+    if (this.lobbyInviteBox) {
+      this.lobbyInviteBox.classList.toggle("hidden", mode === "solo5v5");
     }
     if (
       showToast &&
       this.screenLobby &&
       !this.screenLobby.classList.contains("hidden")
     ) {
-      this.showToast(
-        mode === "ranked"
-          ? "🏆 Đã chọn hàng chờ xếp hạng."
-          : "🌿 Đã chọn đấu thường, không ảnh hưởng điểm rank.",
-      );
+      const messages = {
+        ranked: "🏆 Đã chọn hàng chờ xếp hạng.",
+        casual: "🌿 Đã chọn đấu thường, không ảnh hưởng điểm rank.",
+        solo5v5: "🛡️ Chọn tạo phòng hoặc nhập mã phòng Solo 5v5.",
+      };
+      this.showToast(messages[mode]);
     }
+  }
+
+  sendSoloRoomCommand(type, extra = {}) {
+    if (!this.currentUser) {
+      this.openAuthModal("login");
+      return;
+    }
+
+    const send = () => {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        this.showToast("⚠️ Chưa kết nối máy chủ. Vui lòng thử lại.");
+        return;
+      }
+      this.ws.send(
+        JSON.stringify({
+          type,
+          token: this.authToken,
+          ...extra,
+        }),
+      );
+    };
+
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this.connectWebSocket(send);
+    } else {
+      send();
+    }
+  }
+
+  createSoloRoom() {
+    this.setGameMode("solo5v5", false);
+    this.sendSoloRoomCommand("SOLO_ROOM_CREATE");
+  }
+
+  joinSoloRoom(roomCode) {
+    const normalizedCode = (roomCode || "").trim().toUpperCase();
+    if (!normalizedCode) {
+      this.showToast("Nhập mã phòng Solo 5v5 trước nhé.");
+      this.inputSoloRoomCode?.focus();
+      return;
+    }
+    this.roomCode = normalizedCode;
+    this.setGameMode("solo5v5", false);
+    this.sendSoloRoomCommand("SOLO_ROOM_JOIN", { roomCode: normalizedCode });
+  }
+
+  renderSoloRoomState(state) {
+    if (!state) return;
+    this.soloRoomState = state;
+    this.roomCode = state.roomCode;
+    if (this.soloRoomCodeLabel) {
+      this.soloRoomCodeLabel.textContent = state.roomCode;
+    }
+    if (this.inputSoloRoomCode) {
+      this.inputSoloRoomCode.value = state.roomCode;
+    }
+    if (this.lobbyRoomCode) {
+      this.lobbyRoomCode.textContent = `#${state.roomCode}`;
+    }
+
+    const red = state.red || [];
+    const blue = state.blue || [];
+    if (this.soloRedCount) this.soloRedCount.textContent = `${red.length} / 5`;
+    if (this.soloBlueCount) this.soloBlueCount.textContent = `${blue.length} / 5`;
+
+    const renderRoster = (container, members, teamId) => {
+      if (!container) return;
+      container.replaceChildren();
+      if (members.length === 0) {
+        const empty = document.createElement("span");
+        empty.className = "solo-roster-empty";
+        empty.textContent = "Đang chờ người chơi...";
+        container.appendChild(empty);
+        return;
+      }
+      for (const member of members) {
+        const row = document.createElement("div");
+        row.className = `solo-roster-player${member.isHost ? " host" : ""}`;
+        const name = document.createElement("span");
+        name.textContent =
+          member.socketId === this.socketId
+            ? `${member.username} (Bạn)`
+            : member.username;
+        row.appendChild(name);
+        container.appendChild(row);
+      }
+    };
+
+    renderRoster(this.soloRedRoster, red, "red");
+    renderRoster(this.soloBlueRoster, blue, "blue");
+
+    const myMember = [...red, ...blue].find(
+      (member) => member.socketId === this.socketId,
+    );
+    if (this.btnSoloTeamRed) {
+      this.btnSoloTeamRed.disabled =
+        myMember?.teamId === "red" || red.length >= 5;
+      this.btnSoloTeamRed.textContent =
+        myMember?.teamId === "red" ? "Bạn đang ở Đội Đỏ" : "Chọn Đội Đỏ";
+    }
+    if (this.btnSoloTeamBlue) {
+      this.btnSoloTeamBlue.disabled =
+        myMember?.teamId === "blue" || blue.length >= 5;
+      this.btnSoloTeamBlue.textContent =
+        myMember?.teamId === "blue" ? "Bạn đang ở Đội Xanh" : "Chọn Đội Xanh";
+    }
+
+    const isHost = state.hostSocketId === this.socketId;
+    const canStart = isHost && state.canStart;
+    if (this.btnSoloRoomStart) this.btnSoloRoomStart.disabled = !canStart;
+    if (this.soloRoomStatus) {
+      if (state.canStart) {
+        this.soloRoomStatus.textContent = isHost
+          ? "Đội hình hợp lệ. Chủ phòng có thể bắt đầu trận."
+          : "Đội hình đã đủ. Đang chờ chủ phòng bắt đầu.";
+      } else {
+        const minSize = state.minTeamSize || 2;
+        const redMissing = Math.max(0, minSize - red.length);
+        const blueMissing = Math.max(0, minSize - blue.length);
+        this.soloRoomStatus.textContent =
+          `Cần thêm ${redMissing} người đội Đỏ và ${blueMissing} người đội Xanh.`;
+      }
+    }
+  }
+
+  leaveSoloRoom() {
+    this.sendSoloRoomCommand("SOLO_ROOM_LEAVE");
+  }
+
+  startSoloRoom() {
+    if (!this.soloRoomState) return;
+    this.sendSoloRoomCommand("SOLO_ROOM_START", {
+      roomCode: this.soloRoomState.roomCode,
+    });
+  }
+
+  copySoloRoomInvite() {
+    if (!this.roomCode) return;
+    const invite = new URL(window.location.href);
+    invite.searchParams.set("room", this.roomCode);
+    invite.searchParams.set("mode", "solo5v5");
+    navigator.clipboard
+      ?.writeText(invite.toString())
+      .then(() => this.showToast("Đã sao chép link mời Solo 5v5."))
+      .catch(() => this.showToast(`Mã phòng: ${this.roomCode}`));
   }
 
   async checkAuth() {
@@ -539,8 +725,38 @@ class GameClient {
   handleServerMessage(msg) {
     switch (msg.type) {
       case "SOCKET_READY":
+        this.socketId = msg.socketId;
         if (msg.leaderboard) this.renderGlobalLeaderboard(msg.leaderboard);
         if (msg.lobbyChat) this.renderLobbyChatHistory(msg.lobbyChat);
+        break;
+
+      case "SOLO_ROOM_READY":
+        this.activeGameMode = "solo5v5";
+        this.roomCode = msg.roomCode;
+        if (this.lobbyRoomCode) {
+          this.lobbyRoomCode.textContent = `#${this.roomCode}`;
+        }
+        if (this.inputSoloRoomCode) {
+          this.inputSoloRoomCode.value = this.roomCode;
+        }
+        this.screenLobby.classList.add("hidden");
+        this.modalSoloRoom.classList.remove("hidden");
+        if (msg.state) this.renderSoloRoomState(msg.state);
+        break;
+
+      case "SOLO_ROOM_STATE":
+        this.renderSoloRoomState(msg.state);
+        break;
+
+      case "SOLO_ROOM_ERROR":
+        this.showToast(`⚠️ ${msg.error || "Không thể thao tác phòng Solo."}`);
+        break;
+
+      case "SOLO_ROOM_LEFT":
+        this.soloRoomState = null;
+        this.modalSoloRoom.classList.add("hidden");
+        this.screenLobby.classList.remove("hidden");
+        this.setGameMode("solo5v5", false);
         break;
 
       case "JOIN_REJECTED":
@@ -564,6 +780,18 @@ class GameClient {
 
       case "INIT_GAME":
         this.localPlayerId = msg.playerId;
+        this.activeGameMode = msg.mode || this.selectedGameMode;
+        if (msg.roomCode) this.roomCode = msg.roomCode;
+        if (this.modalSoloRoom) this.modalSoloRoom.classList.add("hidden");
+        this.screenLobby.classList.add("hidden");
+        if (this.teamSideBadge) {
+          const isSolo = this.activeGameMode === "solo5v5" && msg.teamId;
+          this.teamSideBadge.classList.toggle("hidden", !isSolo);
+          this.teamSideBadge.classList.toggle("red", msg.teamId === "red");
+          this.teamSideBadge.classList.toggle("blue", msg.teamId === "blue");
+          this.teamSideBadge.textContent =
+            msg.teamId === "red" ? "ĐỘI ĐỎ" : "ĐỘI XANH";
+        }
         this.arenaRadius = msg.arenaRadius || 2200;
         this.foods.clear();
         if (msg.foods) {
@@ -593,7 +821,11 @@ class GameClient {
         break;
 
       case "MATCH_OVER":
-        this.showMatchOverModal(msg.rankings, msg.intermissionDuration);
+        this.showMatchOverModal(
+          msg.rankings,
+          msg.intermissionDuration,
+          msg,
+        );
         break;
 
       case "MATCH_STARTED":
@@ -736,6 +968,11 @@ class GameClient {
   joinGame() {
     if (!this.currentUser) {
       this.openAuthModal("register");
+      return;
+    }
+
+    if (this.selectedGameMode === "solo5v5") {
+      this.createSoloRoom();
       return;
     }
 
@@ -988,8 +1225,23 @@ class GameClient {
 
   // ================= ENHANCED MATCH OVER =================
 
-  showMatchOverModal(rankings, intermissionDuration) {
+  showMatchOverModal(rankings, intermissionDuration, matchInfo = {}) {
     this.currentMatchRankings = rankings || [];
+    const mode = matchInfo.mode || this.activeGameMode || "ranked";
+    const modeLabels = {
+      ranked: "XẾP HẠNG",
+      casual: "ĐẤU THƯỜNG",
+      solo5v5: "SOLO 5V5 · NGƯỜI THẬT",
+    };
+    if (this.matchOverCard) this.matchOverCard.dataset.mode = mode;
+    if (this.matchOverMode) {
+      this.matchOverMode.textContent = modeLabels[mode] || "TRẬN ĐẤU";
+    }
+    if (this.matchOverRoom) {
+      this.matchOverRoom.textContent =
+        matchInfo.roomCode || this.roomCode || "ARENA-5V5";
+    }
+
     this.modalMatchOver.classList.remove("hidden");
 
     const myRankIdx = this.currentMatchRankings.findIndex(
@@ -999,7 +1251,54 @@ class GameClient {
     const myEntry =
       myRankIdx !== -1 ? this.currentMatchRankings[myRankIdx] : null;
 
-    if (myRank === 1) {
+    const teamResult = matchInfo.teamResult;
+    if (this.soloResultPanel) {
+      this.soloResultPanel.classList.toggle(
+        "hidden",
+        mode !== "solo5v5" || !teamResult,
+      );
+    }
+    if (mode === "solo5v5" && teamResult) {
+      const winnerTeam = teamResult.winnerTeam;
+      const winningEntry = myEntry && myEntry.teamId === winnerTeam;
+      if (this.soloRedResultScore) {
+        this.soloRedResultScore.textContent = Number(
+          teamResult.redScore || 0,
+        ).toLocaleString();
+      }
+      if (this.soloBlueResultScore) {
+        this.soloBlueResultScore.textContent = Number(
+          teamResult.blueScore || 0,
+        ).toLocaleString();
+      }
+      if (teamResult.redScore === teamResult.blueScore) {
+        this.matchOverTrophy.textContent = "🤝";
+        this.matchOverTitle.textContent = "TRẬN ĐẤU HÒA!";
+        this.matchOverSubtitle.textContent = "Hai đội kết thúc với cùng tổng điểm.";
+        if (this.soloWinnerBanner) this.soloWinnerBanner.textContent = "HÒA";
+      } else {
+        this.matchOverTrophy.textContent = winnerTeam === "red" ? "🔴" : "🔵";
+        this.matchOverTitle.textContent =
+          winnerTeam === "red" ? "ĐỘI ĐỎ CHIẾN THẮNG!" : "ĐỘI XANH CHIẾN THẮNG!";
+        this.matchOverSubtitle.textContent = myEntry
+          ? winningEntry
+            ? "Bạn cùng đồng đội đã giành chiến thắng."
+            : "Trận sau cùng đồng đội lật ngược thế trận nhé."
+          : "Tổng điểm được tính từ thành tích của cả đội.";
+        if (this.soloWinnerBanner) {
+          this.soloWinnerBanner.textContent =
+            winnerTeam === "red" ? "ĐỘI ĐỎ THẮNG" : "ĐỘI XANH THẮNG";
+        }
+      }
+      if (winningEntry) {
+        window.soundEngine.playVictoryFanfare();
+        this.startConfetti();
+      } else if (!teamResult.winnerTeam) {
+        window.soundEngine.playMatchEnd();
+      } else {
+        window.soundEngine.playMatchEnd();
+      }
+    } else if (myRank === 1) {
       window.soundEngine.playVictoryFanfare();
       this.startConfetti();
       this.matchOverTrophy.textContent = "👑";
@@ -1106,6 +1405,10 @@ class GameClient {
         (f) => f.username.toLowerCase() === entry.name.toLowerCase(),
       );
       const isLiked = this.likedPlayers.has(entry.name);
+      const teamTag =
+        this.activeGameMode === "solo5v5" && entry.teamId
+          ? `<span class="summary-team-tag ${entry.teamId}">${entry.teamId === "red" ? "ĐỎ" : "XANH"}</span>`
+          : "";
 
       let actionHtml = "";
       if (!isSelf) {
@@ -1127,6 +1430,7 @@ class GameClient {
           <div class="table-player-cell">
             <span class="table-color-dot" style="background: ${entry.color || "#00f0ff"};"></span>
             <span>${entry.name}</span>
+            ${teamTag}
             <span class="table-tag ${entry.isBot ? "bot" : "human"}">${entry.isBot ? "BOT" : "NGƯỜI"}</span>
           </div>
         </td>
@@ -1840,6 +2144,10 @@ class GameClient {
     this.closeFriendsModal();
     this.showToast(`🚀 Đang tham gia phòng #${room}...`);
     this.pendingRoomInvite = null;
+    if (this.selectedGameMode === "solo5v5") {
+      this.joinSoloRoom(room);
+      return;
+    }
     this.joinGame();
   }
 
@@ -2305,6 +2613,45 @@ class GameClient {
         this.setGameMode(button.dataset.mode),
       );
     });
+
+    if (this.btnSoloRoomJoin) {
+      this.btnSoloRoomJoin.addEventListener("click", () =>
+        this.joinSoloRoom(this.inputSoloRoomCode?.value),
+      );
+    }
+    if (this.inputSoloRoomCode) {
+      this.inputSoloRoomCode.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          this.joinSoloRoom(this.inputSoloRoomCode.value);
+        }
+      });
+    }
+    if (this.btnSoloRoomLeave)
+      this.btnSoloRoomLeave.addEventListener("click", () =>
+        this.leaveSoloRoom(),
+      );
+    if (this.btnSoloTeamRed)
+      this.btnSoloTeamRed.addEventListener("click", () =>
+        this.sendSoloRoomCommand("SOLO_ROOM_CHANGE_TEAM", { teamId: "red" }),
+      );
+    if (this.btnSoloTeamBlue)
+      this.btnSoloTeamBlue.addEventListener("click", () =>
+        this.sendSoloRoomCommand("SOLO_ROOM_CHANGE_TEAM", { teamId: "blue" }),
+      );
+    if (this.btnSoloRoomCopy)
+      this.btnSoloRoomCopy.addEventListener("click", () =>
+        this.copySoloRoomInvite(),
+      );
+    if (this.btnSoloRoomInvite)
+      this.btnSoloRoomInvite.addEventListener("click", () => {
+        this.openFriendsModal();
+        this.switchFriendsTab("friends");
+      });
+    if (this.btnSoloRoomStart)
+      this.btnSoloRoomStart.addEventListener("click", () =>
+        this.startSoloRoom(),
+      );
 
     if (this.btnRefreshRank) {
       this.btnRefreshRank.addEventListener("click", () => {

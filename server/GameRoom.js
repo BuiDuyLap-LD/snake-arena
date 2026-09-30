@@ -9,6 +9,9 @@ const accountManager = require("./AccountManager");
 class GameRoom {
   constructor(roomId = "arena-main", options = {}) {
     this.roomId = roomId;
+    this.roomCode = options.roomCode || roomId;
+    this.mode = options.mode || "ranked";
+    this.botsEnabled = options.botsEnabled !== false;
     this.recordStats = options.recordStats !== false;
     this.arenaRadius = 2200;
     this.foodManager = new FoodManager(this.arenaRadius, 500);
@@ -53,7 +56,7 @@ class GameRoom {
     ];
 
     // Maintain initial bots
-    this.ensureBots();
+    if (this.botsEnabled) this.ensureBots();
   }
 
   getAllSnakes() {
@@ -67,7 +70,7 @@ class GameRoom {
     return list;
   }
 
-  findSafeSpawn(existingSnakes) {
+  findSafeSpawn(existingSnakes, teamId = null) {
     let bestPos = { x: 0, y: 0 };
     let bestDist = -1;
     const maxRadius = this.arenaRadius - 400;
@@ -75,7 +78,9 @@ class GameRoom {
     const candidateCount = 20;
     for (let c = 0; c < candidateCount; c++) {
       const r = Math.sqrt(Math.random()) * maxRadius;
-      const theta = Math.random() * Math.PI * 2;
+      const theta = teamId
+        ? (teamId === "red" ? Math.PI : 0) + (Math.random() - 0.5) * Math.PI
+        : Math.random() * Math.PI * 2;
       const candX = Math.cos(theta) * r;
       const candY = Math.sin(theta) * r;
 
@@ -109,6 +114,7 @@ class GameRoom {
   }
 
   ensureBots() {
+    if (!this.botsEnabled) return;
     const needed =
       Math.max(0, this.targetBotCount - this.players.size) - this.bots.size;
     const allSnakes = this.getAllSnakes();
@@ -146,8 +152,15 @@ class GameRoom {
     if (this.loopInterval) clearInterval(this.loopInterval);
   }
 
-  addPlayer(ws, playerId, playerName, playerColor, accountUsername = null) {
-    const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
+  addPlayer(
+    ws,
+    playerId,
+    playerName,
+    playerColor,
+    accountUsername = null,
+    teamId = null,
+  ) {
+    const { pos, angle } = this.findSafeSpawn(this.getAllSnakes(), teamId);
     const snake = new Snake(
       playerId,
       playerName,
@@ -156,7 +169,15 @@ class GameRoom {
       pos,
       angle,
     );
-    this.players.set(playerId, { ws, snake, accountUsername });
+    snake.teamId = teamId;
+    this.players.set(playerId, {
+      ws,
+      snake,
+      accountUsername,
+      teamId,
+      roundScore: 0,
+      roundKills: 0,
+    });
 
     this.sendTo(ws, {
       type: "INIT_GAME",
@@ -164,6 +185,9 @@ class GameRoom {
       arenaRadius: this.arenaRadius,
       roundDuration: this.roundDuration,
       timeRemaining: Math.ceil(this.timeRemaining),
+      mode: this.mode,
+      roomCode: this.roomCode,
+      teamId,
       foods: this.foodManager.getAllFoods(),
       powerups: this.powerupManager.getAllPowerups(),
     });
@@ -224,10 +248,15 @@ class GameRoom {
 
     // Ghi stats cũ trước khi tái sinh
     if (player.snake) {
+      player.roundScore += player.snake.score;
+      player.roundKills += player.snake.kills;
       this.recordPlayerStats(player);
     }
 
-    const { pos, angle } = this.findSafeSpawn(this.getAllSnakes());
+    const { pos, angle } = this.findSafeSpawn(
+      this.getAllSnakes(),
+      player.teamId,
+    );
     player.snake = new Snake(
       playerId,
       player.snake.name,
@@ -236,6 +265,7 @@ class GameRoom {
       pos,
       angle,
     );
+    player.snake.teamId = player.teamId;
     console.log(
       `[GameRoom] Player respawned at (${pos.x}, ${pos.y}) with 3s shield.`,
     );
@@ -254,6 +284,14 @@ class GameRoom {
         finalKills,
       );
     }
+  }
+
+  getRoundStats(snake) {
+    const player = this.players.get(snake.id);
+    return {
+      score: snake.score + (player ? player.roundScore : 0),
+      kills: snake.kills + (player ? player.roundKills : 0),
+    };
   }
 
   tick() {
@@ -347,6 +385,13 @@ class GameRoom {
         if (!s2.alive) continue;
 
         if (s1.id !== s2.id) {
+          if (
+            this.mode === "solo5v5" &&
+            s1.teamId &&
+            s1.teamId === s2.teamId
+          ) {
+            continue;
+          }
           if (s1.isShielded() || s2.isShielded()) {
             continue;
           }
@@ -428,7 +473,9 @@ class GameRoom {
     this.intermissionTimer = this.intermissionDuration;
 
     const allSnakes = this.getAllSnakes();
-    allSnakes.sort((a, b) => b.score - a.score);
+    allSnakes.sort(
+      (a, b) => this.getRoundStats(b).score - this.getRoundStats(a).score,
+    );
 
     // Record stats for all human players
     for (const s of allSnakes) {
@@ -438,19 +485,42 @@ class GameRoom {
       }
     }
 
-    const rankings = allSnakes.map((s, index) => ({
-      rank: index + 1,
-      id: s.id,
-      name: s.name,
-      score: s.score,
-      kills: s.kills,
-      length: s.body.length,
-      color: s.color,
-      isBot: s.isBot,
-    }));
+    const rankings = allSnakes.map((snake, index) => {
+      const roundStats = this.getRoundStats(snake);
+      return {
+        rank: index + 1,
+        id: snake.id,
+        name: snake.name,
+        score: roundStats.score,
+        kills: roundStats.kills,
+        length: snake.body.length,
+        color: snake.color,
+        isBot: snake.isBot,
+        teamId: snake.teamId,
+      };
+    });
+
+    let teamResult;
+    if (this.mode === "solo5v5") {
+      const totals = { red: 0, blue: 0 };
+      for (const ranking of rankings) {
+        if (ranking.teamId === "red" || ranking.teamId === "blue") {
+          totals[ranking.teamId] += ranking.score;
+        }
+      }
+      teamResult = {
+        redScore: totals.red,
+        blueScore: totals.blue,
+        winnerTeam:
+          totals.red === totals.blue ? null : totals.red > totals.blue ? "red" : "blue",
+      };
+    }
 
     this.broadcast({
       type: "MATCH_OVER",
+      mode: this.mode,
+      roomCode: this.roomCode,
+      teamResult,
       rankings: rankings,
       intermissionDuration: this.intermissionDuration,
     });
@@ -468,7 +538,9 @@ class GameRoom {
 
     const allSnakes = [];
     for (const [id, player] of this.players.entries()) {
-      const { pos, angle } = this.findSafeSpawn(allSnakes);
+      player.roundScore = 0;
+      player.roundKills = 0;
+      const { pos, angle } = this.findSafeSpawn(allSnakes, player.teamId);
       player.snake = new Snake(
         id,
         player.snake.name,
@@ -477,6 +549,7 @@ class GameRoom {
         pos,
         angle,
       );
+      player.snake.teamId = player.teamId;
       allSnakes.push(player.snake);
     }
     this.bots.clear();
@@ -485,6 +558,8 @@ class GameRoom {
     this.broadcast({
       type: "MATCH_STARTED",
       roundDuration: this.roundDuration,
+      mode: this.mode,
+      roomCode: this.roomCode,
       foods: this.foodManager.getAllFoods(),
       powerups: this.powerupManager.getAllPowerups(),
     });

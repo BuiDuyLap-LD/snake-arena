@@ -166,6 +166,7 @@
                 ></div>
                 <div
                   class="skin-option"
+                <span id="team-side-badge" class="team-side-badge hidden"></span>
                   data-color="#ff007f"
                   style="background: radial-gradient(circle, #ff007f, #880044)"
                   title="Neon Magenta"
@@ -234,11 +235,48 @@
                   </span>
                   <span class="mode-card-tag casual-tag">CASUAL</span>
                 </button>
+                <button
+                  id="mode-solo5v5"
+                  class="mode-select-card"
+                  type="button"
+                  data-mode="solo5v5"
+                  aria-pressed="false"
+                >
+                  <span class="mode-card-icon">🛡️</span>
+                  <span class="mode-card-copy">
+                    <strong>Solo 5v5 người thật</strong>
+                    <small>Phòng riêng · tối thiểu 2 người mỗi đội</small>
+                  </span>
+                  <span class="mode-card-tag solo-tag">HUMAN ONLY</span>
+                </button>
               </div>
             </section>
 
+            <section id="solo-room-entry" class="solo-room-entry hidden">
+              <div class="solo-room-entry-heading">
+                <strong>Tạo phòng hoặc tham gia bằng mã</strong>
+                <span>Không bot · tối đa 5 người mỗi đội</span>
+              </div>
+              <div class="solo-room-join-row">
+                <input
+                  id="input-solo-room-code"
+                  class="text-input"
+                  type="text"
+                  maxlength="10"
+                  placeholder="Mã phòng, ví dụ 5V5-A1B2C3"
+                  autocomplete="off"
+                />
+                <button id="btn-solo-room-join" class="btn-secondary" type="button">
+                  Vào phòng
+                </button>
+              </div>
+              <p class="solo-room-hint">
+                Bấm nút tạo phòng bên dưới để làm chủ phòng mới.
+              </p>
+            </section>
+
             <!-- Invite Friends Box -->
-            <div class="invite-box">
+            <div id="lobby-invite-box" class="invite-box">
               <div class="invite-info">
                 <span class="invite-tag">PHÒNG ĐẤU</span>
                 <span class="room-code-badge" id="lobby-room-code"
@@ -599,7 +637,26 @@
           <p id="match-over-subtitle" class="match-over-subtitle">
             Tổng kết chiến tích các dũng sĩ & Vinh danh cao thủ
           </p>
+          <div class="match-over-context">
+            <span id="match-over-mode" class="match-over-mode">XẾP HẠNG</span>
+            <span id="match-over-room" class="match-over-room">ARENA-5V5</span>
+          </div>
         </div>
+
+        <section id="solo-result-panel" class="solo-result-panel hidden">
+          <div class="solo-result-team red-result">
+            <span>ĐỘI ĐỎ</span>
+            <strong id="solo-red-result-score">0</strong>
+          </div>
+          <div class="solo-result-center">
+            <span id="solo-winner-banner">TỔNG ĐIỂM</span>
+            <span class="solo-result-divider">VS</span>
+          </div>
+          <div class="solo-result-team blue-result">
+            <span>ĐỘI XANH</span>
+            <strong id="solo-blue-result-score">0</strong>
+          </div>
+        </section>
 
         <!-- Top 3 Podium with MVP Badge -->
         <div class="podium-container">
@@ -714,6 +771,82 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- ================= SOLO 5V5 WAITING ROOM ================= -->
+    <div id="modal-solo-room" class="modal-overlay solo-room-overlay hidden">
+      <section class="solo-room-card" aria-labelledby="solo-room-title">
+        <header class="solo-room-header">
+          <div>
+            <span class="solo-room-kicker">HUMAN ONLY · 5V5</span>
+            <h2 id="solo-room-title">Phòng chờ Solo</h2>
+            <p>Đủ ít nhất 2 người mỗi đội để mở trận.</p>
+          </div>
+          <button
+            id="btn-solo-room-leave"
+            class="solo-room-leave"
+            type="button"
+          >
+            ← Rời phòng
+          </button>
+        </header>
+
+        <div class="solo-room-toolbar">
+          <div>
+            <span class="solo-room-toolbar-label">MÃ PHÒNG</span>
+            <strong id="solo-room-code-label">5V5-------</strong>
+          </div>
+          <div class="solo-room-toolbar-actions">
+            <button id="btn-solo-room-copy" class="btn-secondary" type="button">
+              Sao chép link
+            </button>
+            <button id="btn-solo-room-invite" class="btn-primary-play" type="button">
+              Mời bạn bè
+            </button>
+          </div>
+        </div>
+
+        <div class="solo-team-grid">
+          <section class="solo-team-card red-team" aria-labelledby="red-team-title">
+            <header>
+              <div>
+                <span class="team-side-label">PHE 01</span>
+                <h3 id="red-team-title">Đội Đỏ</h3>
+              </div>
+              <span id="solo-red-count" class="team-count">0 / 5</span>
+            </header>
+            <div id="solo-red-roster" class="solo-roster"></div>
+            <button id="btn-solo-team-red" class="team-pick-button" type="button">
+              Chọn Đội Đỏ
+            </button>
+          </section>
+
+          <div class="solo-versus" aria-hidden="true">VS</div>
+
+          <section class="solo-team-card blue-team" aria-labelledby="blue-team-title">
+            <header>
+              <div>
+                <span class="team-side-label">PHE 02</span>
+                <h3 id="blue-team-title">Đội Xanh</h3>
+              </div>
+              <span id="solo-blue-count" class="team-count">0 / 5</span>
+            </header>
+            <div id="solo-blue-roster" class="solo-roster"></div>
+            <button id="btn-solo-team-blue" class="team-pick-button" type="button">
+              Chọn Đội Xanh
+            </button>
+          </section>
+        </div>
+
+        <footer class="solo-room-footer">
+          <p id="solo-room-status" role="status">
+            Cần ít nhất 2 người ở mỗi đội để bắt đầu.
+          </p>
+          <button id="btn-solo-room-start" class="solo-start-button" type="button" disabled>
+            Bắt đầu trận
+          </button>
+        </footer>
+      </section>
     </div>
 
     <!-- ================= MODAL: FRIENDS & SOCIAL HUB ================= -->

@@ -394,7 +394,12 @@ class SocialManager {
       fromTier: raw ? raw.tier : "Đồng 🥉",
       fromSkin: raw ? raw.skin : "#00f0ff",
       roomCode: roomCode || entry.room || "ARENA-5V5",
-      mode: mode === "casual" ? "casual" : "ranked",
+      mode:
+        mode === "solo5v5"
+          ? "solo5v5"
+          : mode === "casual"
+            ? "casual"
+            : "ranked",
       time: Date.now(),
     });
 

@@ -316,6 +316,7 @@ class Snake {
       name: this.name,
       color: this.color,
       isBot: this.isBot,
+      teamId: this.teamId,
       alive: this.alive,
       score: this.score,
       kills: this.kills,

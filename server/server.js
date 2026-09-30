@@ -7,6 +7,7 @@ const { WebSocketServer } = require("ws");
 const path = require("path");
 const os = require("os");
 const GameRoom = require("./GameRoom");
+const SoloRoomManager = require("./SoloRoomManager");
 const leaderboardManager = require("./LeaderboardManager");
 const accountManager = require("./AccountManager");
 const socialManager = require("./SocialManager");
@@ -14,8 +15,11 @@ const supabaseStorage = require("./SupabaseStorage");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const MAX_ACTIVE_SOLO_ROOMS = 2;
 let gameRoom;
 let casualRoom;
+const soloRoomManager = new SoloRoomManager();
+const soloGameRooms = new Map();
 
 app.use(express.json());
 app.use(compression({ threshold: 1024, level: 3 }));
@@ -269,6 +273,29 @@ wss.on("connection", (ws) => {
   let hasJoinedGame = false;
   let joinedRoom = null;
 
+  const createSoloMember = (user, teamId) => ({
+    socketId,
+    playerId,
+    username: user.username,
+    playerName: user.username,
+    playerColor: user.skin || "#00f0ff",
+    teamId,
+    ws,
+    startGame: (room, assignedTeam) => {
+      joinedRoom = room;
+      hasJoinedGame = true;
+      socialManager.setSocketStatus(socketId, "in_game", room.roomCode);
+      room.addPlayer(
+        ws,
+        playerId,
+        user.username,
+        user.skin || "#00f0ff",
+        user.username,
+        assignedTeam,
+      );
+    },
+  });
+
   // Register into social presence
   socialManager.registerSocket(socketId, ws);
 
@@ -310,6 +337,86 @@ wss.on("connection", (ws) => {
       }
 
       // 2. Joining Game
+      else if (
+        data.type === "SOLO_ROOM_CREATE" ||
+        data.type === "SOLO_ROOM_JOIN"
+      ) {
+        if (hasJoinedGame) return;
+        const user = data.token
+          ? accountManager.getUserByToken(data.token)
+          : null;
+        if (!user) {
+          ws.send(
+            JSON.stringify({
+              type: "SOLO_ROOM_ERROR",
+              error: "Bạn cần đăng nhập để tạo hoặc vào phòng Solo 5v5.",
+            }),
+          );
+          return;
+        }
+
+        const member = createSoloMember(user, data.teamId);
+        const result =
+          data.type === "SOLO_ROOM_CREATE"
+            ? soloRoomManager.create(member)
+            : soloRoomManager.join(data.roomCode, member);
+
+        if (!result.success) {
+          ws.send(
+            JSON.stringify({ type: "SOLO_ROOM_ERROR", error: result.error }),
+          );
+          return;
+        }
+
+        socialManager.setSocketStatus(socketId, "lobby", result.roomCode);
+        ws.send(
+          JSON.stringify({
+            type: "SOLO_ROOM_READY",
+            roomCode: result.roomCode,
+            state: result.state,
+          }),
+        );
+      } else if (data.type === "SOLO_ROOM_CHANGE_TEAM") {
+        const result = soloRoomManager.changeTeam(socketId, data.teamId);
+        if (!result.success) {
+          ws.send(
+            JSON.stringify({ type: "SOLO_ROOM_ERROR", error: result.error }),
+          );
+        }
+      } else if (data.type === "SOLO_ROOM_LEAVE") {
+        soloRoomManager.leave(socketId);
+        socialManager.setSocketStatus(socketId, "lobby");
+        ws.send(JSON.stringify({ type: "SOLO_ROOM_LEFT" }));
+      } else if (data.type === "SOLO_ROOM_START") {
+        if (soloGameRooms.size >= MAX_ACTIVE_SOLO_ROOMS) {
+          ws.send(
+            JSON.stringify({
+              type: "SOLO_ROOM_ERROR",
+              error: "Máy chủ đang chạy tối đa 2 trận Solo. Vui lòng thử lại sau.",
+            }),
+          );
+          return;
+        }
+        const result = soloRoomManager.start(data.roomCode, socketId);
+        if (!result.success) {
+          ws.send(
+            JSON.stringify({ type: "SOLO_ROOM_ERROR", error: result.error }),
+          );
+          return;
+        }
+
+        const soloGameRoom = new GameRoom(result.roomCode, {
+          mode: "solo5v5",
+          roomCode: result.roomCode,
+          botsEnabled: false,
+        });
+        soloGameRoom.start();
+        soloGameRooms.set(result.roomCode, soloGameRoom);
+        for (const member of result.members) {
+          member.startGame(soloGameRoom, member.teamId);
+        }
+      }
+
       else if (data.type === "JOIN_GAME") {
         if (hasJoinedGame) return;
         const playerName = (data.name || "Snake").substring(0, 16).trim();
@@ -323,6 +430,15 @@ wss.on("connection", (ws) => {
             JSON.stringify({
               type: "JOIN_REJECTED",
               error: "Bạn cần đăng nhập để tham gia trận đấu.",
+            }),
+          );
+          return;
+        }
+        if (data.mode === "solo5v5") {
+          ws.send(
+            JSON.stringify({
+              type: "JOIN_REJECTED",
+              error: "Hãy tạo hoặc vào phòng Solo 5v5 từ sảnh trước.",
             }),
           );
           return;
@@ -349,9 +465,17 @@ wss.on("connection", (ws) => {
 
       // 3. Leaving Game (return to lobby)
       else if (data.type === "LEAVE_GAME" && hasJoinedGame) {
+        const leavingRoom = joinedRoom;
         joinedRoom.removePlayer(playerId);
         if (joinedRoom === casualRoom && casualRoom.players.size === 0) {
           casualRoom.stop();
+        }
+        if (
+          leavingRoom.mode === "solo5v5" &&
+          leavingRoom.players.size === 0
+        ) {
+          leavingRoom.stop();
+          soloGameRooms.delete(leavingRoom.roomCode);
         }
         joinedRoom = null;
         hasJoinedGame = false;
@@ -360,11 +484,11 @@ wss.on("connection", (ws) => {
 
       // 4. In-game inputs
       else if (data.type === "PLAYER_INPUT" && hasJoinedGame) {
-        gameRoom.handlePlayerInput(playerId, data);
+        joinedRoom.handlePlayerInput(playerId, data);
       } else if (data.type === "USE_POWERUP" && hasJoinedGame) {
-        gameRoom.handlePlayerInput(playerId, data);
+        joinedRoom.handlePlayerInput(playerId, data);
       } else if (data.type === "RESPAWN" && hasJoinedGame) {
-        gameRoom.respawnPlayer(playerId);
+        joinedRoom.respawnPlayer(playerId);
       }
 
       // 5. Social & Friend Actions
@@ -474,12 +598,22 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     if (hasJoinedGame) {
+      const closingRoom = joinedRoom;
       joinedRoom.removePlayer(playerId);
       if (joinedRoom === casualRoom && casualRoom.players.size === 0) {
         casualRoom.stop();
       }
+      if (
+        closingRoom.mode === "solo5v5" &&
+        closingRoom.players.size === 0
+      ) {
+        closingRoom.stop();
+        soloGameRooms.delete(closingRoom.roomCode);
+      }
       hasJoinedGame = false;
       joinedRoom = null;
+    } else {
+      soloRoomManager.leave(socketId);
     }
     socialManager.unregisterSocket(socketId);
   });
@@ -517,7 +651,9 @@ async function startServer() {
   if (supabaseStorage.enabled) {
     console.log("[Storage] Persistent data is backed by Supabase.");
   } else {
-    console.log("[Storage] Supabase is not configured; using local JSON files.");
+    console.log(
+      "[Storage] Supabase is not configured; using local JSON files.",
+    );
   }
 
   gameRoom = new GameRoom("arena-main");
@@ -537,6 +673,9 @@ async function startServer() {
 async function shutdown() {
   if (gameRoom) gameRoom.stop();
   if (casualRoom) casualRoom.stop();
+  for (const room of soloGameRooms.values()) {
+    room.stop();
+  }
   for (const client of wss.clients) {
     client.terminate();
   }
@@ -546,7 +685,10 @@ async function shutdown() {
     try {
       await supabaseStorage.flush();
     } catch (error) {
-      console.error("[Server] Could not flush Supabase writes on shutdown:", error.message);
+      console.error(
+        "[Server] Could not flush Supabase writes on shutdown:",
+        error.message,
+      );
       process.exitCode = 1;
     }
   });

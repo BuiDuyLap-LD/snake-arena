@@ -578,6 +578,12 @@ html {
   box-shadow: inset 3px 0 0 var(--neon-green);
 }
 
+.mode-select-card.active[data-mode="solo5v5"] {
+  border-color: #ff8b63;
+  background: rgba(255, 111, 73, 0.09);
+  box-shadow: inset 3px 0 0 #ff8b63;
+}
+
 .mode-card-icon {
   display: grid;
   place-items: center;
@@ -616,6 +622,51 @@ html {
 }
 .casual-tag {
   color: var(--neon-green);
+}
+.solo-tag {
+  color: #ffad8b;
+}
+
+.solo-room-entry {
+  display: grid;
+  gap: 9px;
+  margin: -2px 0 14px;
+  padding: 12px;
+  border: 1px solid rgba(255, 139, 99, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 111, 73, 0.06);
+}
+
+.solo-room-entry-heading {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.solo-room-entry-heading span,
+.solo-room-hint {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.solo-room-join-row {
+  display: flex;
+  gap: 8px;
+}
+
+.solo-room-join-row .text-input {
+  min-width: 0;
+  text-transform: uppercase;
+}
+
+.solo-room-join-row .btn-secondary {
+  width: auto;
+  flex: 0 0 auto;
+  padding-inline: 14px;
+}
+
+.solo-room-hint {
+  margin: 0;
 }
 
 .card-header h2 {
@@ -1174,6 +1225,27 @@ html {
   gap: 6px;
 }
 
+.team-side-badge {
+  padding: 4px 8px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.team-side-badge.red {
+  border-color: rgba(255, 74, 97, 0.6);
+  background: rgba(255, 74, 97, 0.15);
+  color: #ff9aa6;
+}
+
+.team-side-badge.blue {
+  border-color: rgba(67, 160, 255, 0.6);
+  background: rgba(67, 160, 255, 0.15);
+  color: #92cbff;
+}
+
 /* In-game Match Leaderboard */
 .leaderboard-panel {
   position: absolute;
@@ -1565,6 +1637,203 @@ html {
   transition: opacity 0.3s ease;
 }
 
+.solo-room-overlay {
+  position: fixed;
+  z-index: 190;
+  padding: 20px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 139, 99, 0.12), transparent 34%),
+    rgba(3, 6, 12, 0.96);
+}
+
+.solo-room-card {
+  width: min(980px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 26px;
+  border: 1px solid rgba(255, 139, 99, 0.42);
+  border-radius: 16px;
+  background: #0c121e;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.solo-room-header,
+.solo-room-toolbar,
+.solo-room-footer,
+.solo-room-toolbar-actions,
+.solo-team-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.solo-room-kicker,
+.solo-room-toolbar-label,
+.team-side-label {
+  color: #ffad8b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.solo-room-header h2 {
+  margin: 4px 0 2px;
+  font-size: 24px;
+}
+
+.solo-room-header p {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.solo-room-leave,
+.team-pick-button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font: 700 12px var(--font-family);
+  cursor: pointer;
+}
+
+.solo-room-toolbar {
+  margin: 20px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.solo-room-toolbar > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.solo-room-toolbar strong {
+  color: #eafcff;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.solo-room-toolbar-actions .btn-secondary,
+.solo-room-toolbar-actions .btn-primary-play {
+  width: auto;
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.solo-team-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 14px;
+}
+
+.solo-team-card {
+  min-width: 0;
+  min-height: 250px;
+  padding: 15px;
+  border: 1px solid;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.red-team {
+  border-color: rgba(255, 74, 97, 0.36);
+}
+
+.blue-team {
+  border-color: rgba(67, 160, 255, 0.38);
+}
+
+.solo-team-card h3 {
+  margin-top: 3px;
+  font-size: 18px;
+}
+
+.red-team h3 { color: #ff7284; }
+.blue-team h3 { color: #72baff; }
+
+.team-count {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.solo-roster {
+  display: grid;
+  gap: 7px;
+  min-height: 136px;
+  margin: 12px 0;
+  align-content: start;
+}
+
+.solo-roster-player {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 12px;
+}
+
+.solo-roster-player.host::after {
+  content: "CHỦ PHÒNG";
+  color: #ffcf74;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.team-pick-button {
+  width: 100%;
+}
+
+.red-team .team-pick-button { border-color: rgba(255, 74, 97, 0.4); }
+.blue-team .team-pick-button { border-color: rgba(67, 160, 255, 0.42); }
+
+.solo-versus {
+  align-self: center;
+  color: #8290a2;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.solo-room-footer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.solo-room-footer p {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.solo-start-button {
+  min-width: 190px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 9px;
+  background: #ff875e;
+  color: #1b0d08;
+  font: 900 13px var(--font-family);
+  cursor: pointer;
+}
+
+.solo-start-button:disabled {
+  background: #3a414b;
+  color: #9aa4b2;
+  cursor: not-allowed;
+}
+
 .modal-overlay.hidden {
   opacity: 0;
   pointer-events: none;
@@ -1573,7 +1842,7 @@ html {
 
 .chat-screen-overlay {
   position: fixed;
-  z-index: 180;
+  z-index: 220;
   padding: 20px;
   background:
     radial-gradient(circle at 12% 8%, rgba(0, 240, 255, 0.1), transparent 34%),
@@ -1844,6 +2113,84 @@ html {
   .private-chat-drawer {
     padding: 14px;
     border-radius: 0;
+  }
+
+  .solo-room-entry {
+    padding: 10px;
+  }
+
+  .solo-room-join-row {
+    align-items: stretch;
+  }
+
+  .solo-room-join-row .btn-secondary {
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+
+  .solo-room-overlay {
+    padding: 0;
+  }
+
+  .solo-room-card {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 18px 14px;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .solo-room-header {
+    align-items: flex-start;
+  }
+
+  .solo-room-header h2 {
+    font-size: 20px;
+  }
+
+  .solo-room-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    margin: 14px 0 10px;
+  }
+
+  .solo-room-toolbar-actions {
+    width: 100%;
+  }
+
+  .solo-room-toolbar-actions .btn-secondary,
+  .solo-room-toolbar-actions .btn-primary-play {
+    flex: 1 1 0;
+  }
+
+  .solo-team-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .solo-team-card {
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .solo-roster {
+    min-height: 64px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .solo-versus {
+    display: none;
+  }
+
+  .solo-room-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .solo-start-button {
+    width: 100%;
   }
 
   .mobile-controls {
@@ -2208,16 +2555,29 @@ html {
 
 /* ================= ENHANCED MATCH OVER CARD ================= */
 .match-over-card {
-  width: 680px;
+  width: min(860px, 95vw);
   max-width: 95vw;
-  max-height: 90vh;
+  max-height: 94vh;
   overflow-y: auto;
-  border: 1px solid rgba(255, 215, 0, 0.5) !important;
+  border: 1px solid rgba(0, 240, 255, 0.34) !important;
+  border-radius: 18px;
+  background: #0a111d;
   box-shadow:
-    0 0 60px rgba(255, 215, 0, 0.25),
+    0 0 55px rgba(0, 240, 255, 0.12),
     0 25px 50px rgba(0, 0, 0, 0.8) !important;
-  padding: 28px 24px;
+  padding: 24px;
   text-align: left;
+}
+
+.match-over-card[data-mode="casual"] {
+  border-color: rgba(0, 255, 136, 0.36) !important;
+}
+
+.match-over-card[data-mode="solo5v5"] {
+  border-color: rgba(255, 139, 99, 0.52) !important;
+  box-shadow:
+    0 0 48px rgba(255, 111, 73, 0.13),
+    0 25px 50px rgba(0, 0, 0, 0.8) !important;
 }
 
 .match-over-card::-webkit-scrollbar {
@@ -2230,7 +2590,9 @@ html {
 
 .match-over-header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .match-over-trophy {
@@ -2251,10 +2613,9 @@ html {
 }
 
 .match-over-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 900;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #fff700, #ffaa00);
+  background: linear-gradient(135deg, #f7ffff, #83f2ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -2263,6 +2624,89 @@ html {
   color: var(--text-secondary);
   font-size: 13px;
   margin-top: 4px;
+}
+
+.match-over-context {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.match-over-mode,
+.match-over-room {
+  padding: 5px 9px;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 6px;
+  background: rgba(0, 240, 255, 0.07);
+  color: #b8f8ff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.match-over-room {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+}
+
+.match-over-card[data-mode="casual"] .match-over-mode {
+  border-color: rgba(0, 255, 136, 0.3);
+  background: rgba(0, 255, 136, 0.08);
+  color: #a9ffd9;
+}
+
+.match-over-card[data-mode="solo5v5"] .match-over-mode {
+  border-color: rgba(255, 139, 99, 0.36);
+  background: rgba(255, 139, 99, 0.09);
+  color: #ffc1a9;
+}
+
+.solo-result-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.solo-result-team {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.solo-result-team span,
+.solo-result-center > span:first-child {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+}
+
+.solo-result-team strong {
+  font-size: clamp(22px, 5vw, 34px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.red-result strong { color: #ff7788; }
+.blue-result strong { color: #72baff; }
+
+.solo-result-center {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+
+.solo-result-divider {
+  color: #8d9aab;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 /* MVP Tag on First Podium Step */
@@ -2459,6 +2903,23 @@ html {
   font-weight: 700;
 }
 
+.summary-team-tag {
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.summary-team-tag.red {
+  background: rgba(255, 74, 97, 0.14);
+  color: #ff8897;
+}
+
+.summary-team-tag.blue {
+  background: rgba(67, 160, 255, 0.15);
+  color: #88c7ff;
+}
+
 .table-actions-cell {
   display: flex;
   align-items: center;
@@ -2536,6 +2997,43 @@ html {
 
 .match-actions-row button {
   padding: 12px;
+}
+
+@media (max-width: 768px) {
+  .match-over-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100dvh;
+    padding: 20px 14px;
+    border-radius: 0;
+  }
+
+  .match-over-title {
+    font-size: 20px;
+  }
+
+  .solo-result-panel {
+    gap: 8px;
+    padding: 10px 6px;
+  }
+
+  .solo-result-team strong {
+    font-size: 23px;
+  }
+
+  .scoreboard-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .match-actions-row {
+    flex-wrap: wrap;
+  }
+
+  .match-actions-row button {
+    flex: 1 1 100%;
+  }
 }
 
 /* ================= MODAL: FRIENDS & SOCIAL HUB ================= */

@@ -60,6 +60,7 @@ class GameRenderer {
           name: s.name,
           color: s.color,
           isBot: s.isBot,
+          teamId: s.teamId || null,
           alive: s.alive,
           score: s.score,
           kills: s.kills,
@@ -81,6 +82,7 @@ class GameRenderer {
         interp.score = s.score;
         interp.kills = s.kills;
         interp.radius = s.radius;
+        interp.teamId = s.teamId || null;
         interp.isBoosting = s.isBoosting;
         interp.shield = s.shield;
         interp.length = s.length;
@@ -508,6 +510,14 @@ class GameRenderer {
       ctx.globalAlpha = 0.32;
       ctx.fill();
       ctx.globalAlpha = 1.0;
+    }
+
+    if (snake.teamId === "red" || snake.teamId === "blue") {
+      ctx.beginPath();
+      ctx.arc(0, 0, baseRadius + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = snake.teamId === "red" ? "#ff4a61" : "#43a0ff";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
     }
 
     // Head base circle
