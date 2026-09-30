@@ -58,6 +58,7 @@ class GameClient {
         price: { coins: 120 },
         bonus: "+2% Speed",
         description: "Rắn nhanh nhẹn, nhẹ như tia điện.",
+        stats: { speed: 2, boost: 0, magnet: 1, shield: 0 },
       },
       {
         id: "blaze-red",
@@ -68,6 +69,7 @@ class GameClient {
         price: { coins: 220, shards: 2 },
         bonus: "+3% Boost",
         description: "Tăng hiệu ứng boost trong trận đấu.",
+        stats: { speed: 1, boost: 3, magnet: 0, shield: 1 },
       },
       {
         id: "trail-fire",
@@ -78,6 +80,7 @@ class GameClient {
         price: { coins: 180 },
         bonus: "Trail lửa",
         description: "Hiệu ứng đuôi lửa khi chiến đấu.",
+        stats: { speed: 1, boost: 1, magnet: 2, shield: 1 },
       },
       {
         id: "booster-pack",
@@ -88,8 +91,17 @@ class GameClient {
         price: { coins: 260, tickets: 1 },
         bonus: "+1 Booster",
         description: "Mở khóa gói tăng tốc cho trận tiếp theo.",
+        stats: { speed: 0, boost: 2, magnet: 1, shield: 1 },
       },
     ];
+    this.skinStatMap = {
+      "starter-cyan": { speed: 2, boost: 0, magnet: 1, shield: 0 },
+      "blaze-red": { speed: 1, boost: 3, magnet: 0, shield: 1 },
+      "emerald-boost": { speed: 1, boost: 1, magnet: 3, shield: 0 },
+      "solar-gold": { speed: 1, boost: 2, magnet: 0, shield: 2 },
+      "violet-arc": { speed: 2, boost: 1, magnet: 1, shield: 1 },
+      "crimson-flare": { speed: 0, boost: 3, magnet: 1, shield: 1 },
+    };
     this.battlePassLevels = [
       { level: 1, reward: { coins: 80 }, label: "Neon Badge" },
       { level: 2, reward: { coins: 100 }, label: "Boost Ticket" },
@@ -135,6 +147,8 @@ class GameClient {
           battlePassXp: parsed.battlePassXp || 0,
           battlePassLevel: parsed.battlePassLevel || 1,
           premiumPass: !!parsed.premiumPass,
+          snakeLevel: parsed.snakeLevel || 1,
+          equippedSkin: parsed.equippedSkin || "starter-cyan",
           quests: parsed.quests || this.getDefaultQuestState(),
         };
       }
@@ -152,6 +166,8 @@ class GameClient {
       battlePassXp: 0,
       battlePassLevel: 1,
       premiumPass: false,
+      snakeLevel: 1,
+      equippedSkin: "starter-cyan",
       quests: this.getDefaultQuestState(),
     };
   }
@@ -192,6 +208,53 @@ class GameClient {
     if (this.playerProgress.level >= 7) return "🥇 Vàng";
     if (this.playerProgress.level >= 3) return "🥈 Bạc";
     return "🥉 Đồng";
+  }
+
+  getSelectedSkinStats() {
+    const key = this.playerProgress.equippedSkin || "starter-cyan";
+    const base = this.skinStatMap[key] || { speed: 0, boost: 0, magnet: 0, shield: 0 };
+    const levelBonus = (this.playerProgress.snakeLevel || 1) - 1;
+    return {
+      speed: Math.min(15, base.speed + levelBonus * 0.8),
+      boost: Math.min(15, base.boost + levelBonus * 0.7),
+      magnet: Math.min(15, base.magnet + levelBonus * 0.6),
+      shield: Math.min(15, base.shield + levelBonus * 0.6),
+    };
+  }
+
+  getSnakeUpgradeCost() {
+    const level = this.playerProgress.snakeLevel || 1;
+    return 60 + (level - 1) * 35;
+  }
+
+  renderSnakeStats() {
+    const stats = this.getSelectedSkinStats();
+    const level = this.playerProgress.snakeLevel || 1;
+    if (this.snakeLevelBadge) {
+      this.snakeLevelBadge.textContent = `Lv. ${level}`;
+    }
+    if (this.statSpeed) this.statSpeed.textContent = `+${stats.speed.toFixed(1)}%`;
+    if (this.statBoost) this.statBoost.textContent = `+${stats.boost.toFixed(1)}%`;
+    if (this.statMagnet) this.statMagnet.textContent = `+${stats.magnet.toFixed(1)}%`;
+    if (this.statShield) this.statShield.textContent = `+${stats.shield.toFixed(1)}%`;
+    if (this.snakeUpgradeCost) {
+      this.snakeUpgradeCost.textContent = `Phí: ${this.getSnakeUpgradeCost()} 🪙`;
+    }
+  }
+
+  upgradeSnake() {
+    const cost = this.getSnakeUpgradeCost();
+    if ((this.playerProgress.coins || 0) < cost) {
+      this.showToast("⚠️ Không đủ vàng để nâng cấp rắn.");
+      return;
+    }
+
+    this.playerProgress.coins -= cost;
+    this.playerProgress.snakeLevel = (this.playerProgress.snakeLevel || 1) + 1;
+    this.savePlayerProgress();
+    this.renderPlayerProgress();
+    this.renderSnakeStats();
+    this.showToast(`✅ Rắn đã được nâng cấp lên Lv. ${this.playerProgress.snakeLevel}.`);
   }
 
   renderPlayerProgress() {
@@ -247,6 +310,7 @@ class GameClient {
 
     this.renderBattlePassLevels();
     this.renderQuests();
+    this.renderSnakeStats();
   }
 
   advanceQuestProgress(groupKey, questId, amount = 1) {
@@ -511,6 +575,13 @@ class GameClient {
     this.battlePassLevelLabel = document.getElementById("battle-pass-level-label");
     this.questList = document.getElementById("quest-list");
     this.btnBattlePassPremium = document.getElementById("btn-battle-pass-premium");
+    this.snakeLevelBadge = document.getElementById("snake-level-badge");
+    this.statSpeed = document.getElementById("stat-speed");
+    this.statBoost = document.getElementById("stat-boost");
+    this.statMagnet = document.getElementById("stat-magnet");
+    this.statShield = document.getElementById("stat-shield");
+    this.snakeUpgradeCost = document.getElementById("snake-upgrade-cost");
+    this.btnUpgradeSnake = document.getElementById("btn-upgrade-snake");
     this.modeSolo5v5 = document.getElementById("mode-solo5v5");
     this.soloRoomEntry = document.getElementById("solo-room-entry");
     this.inputSoloRoomCode = document.getElementById("input-solo-room-code");
@@ -2965,10 +3036,18 @@ class GameClient {
         this.skinOptions.forEach((o) => o.classList.remove("active"));
         opt.classList.add("active");
         this.selectedColor = opt.dataset.color;
+        const selectedSkinId = opt.dataset.skinId || "starter-cyan";
+        this.playerProgress.equippedSkin = selectedSkinId;
+        this.savePlayerProgress();
+        this.renderSnakeStats();
         this.updateAvatarPreview();
         window.soundEngine.playEat();
       });
     });
+
+    if (this.btnUpgradeSnake) {
+      this.btnUpgradeSnake.addEventListener("click", () => this.upgradeSnake());
+    }
 
     if (this.btnCopyInvite) {
       this.btnCopyInvite.addEventListener("click", () => {

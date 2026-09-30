@@ -199,7 +199,9 @@
                 <div class="battle-pass-track">
                   <div id="battle-pass-fill" class="battle-pass-fill"></div>
                 </div>
-                <span id="battle-pass-level-label" class="battle-pass-level-label"
+                <span
+                  id="battle-pass-level-label"
+                  class="battle-pass-level-label"
                   >Lv. 1</span
                 >
               </div>
@@ -238,39 +240,83 @@
                 <div
                   class="skin-option active"
                   data-color="#00f0ff"
+                  data-skin-id="starter-cyan"
                   style="background: radial-gradient(circle, #00f0ff, #007799)"
                   title="Electric Cyan"
                 ></div>
                 <div
                   class="skin-option"
                   data-color="#ff007f"
+                  data-skin-id="blaze-red"
                   style="background: radial-gradient(circle, #ff007f, #880044)"
                   title="Neon Magenta"
                 ></div>
                 <div
                   class="skin-option"
                   data-color="#00ff88"
+                  data-skin-id="emerald-boost"
                   style="background: radial-gradient(circle, #00ff88, #007733)"
                   title="Toxic Emerald"
                 ></div>
                 <div
                   class="skin-option"
                   data-color="#ffbe0b"
+                  data-skin-id="solar-gold"
                   style="background: radial-gradient(circle, #ffbe0b, #996600)"
                   title="Golden Solar"
                 ></div>
                 <div
                   class="skin-option"
                   data-color="#9d4edd"
+                  data-skin-id="violet-arc"
                   style="background: radial-gradient(circle, #9d4edd, #4a154b)"
                   title="Cyber Violet"
                 ></div>
                 <div
                   class="skin-option"
                   data-color="#ff3b30"
+                  data-skin-id="crimson-flare"
                   style="background: radial-gradient(circle, #ff3b30, #7a0000)"
                   title="Crimson Blaze"
                 ></div>
+              </div>
+            </div>
+
+            <div class="snake-stats-panel">
+              <div class="snake-stats-header">
+                <div>
+                  <span class="snake-stats-kicker">Rắn & Skin</span>
+                  <h3>Chỉ số rắn</h3>
+                </div>
+                <span id="snake-level-badge" class="snake-level-badge">Lv. 1</span>
+              </div>
+
+              <div class="snake-stat-grid">
+                <div class="snake-stat-box">
+                  <span>Tốc độ</span>
+                  <strong id="stat-speed">+0%</strong>
+                </div>
+                <div class="snake-stat-box">
+                  <span>Boost</span>
+                  <strong id="stat-boost">+0%</strong>
+                </div>
+                <div class="snake-stat-box">
+                  <span>Magnet</span>
+                  <strong id="stat-magnet">+0%</strong>
+                </div>
+                <div class="snake-stat-box">
+                  <span>Shield</span>
+                  <strong id="stat-shield">+0%</strong>
+                </div>
+              </div>
+
+              <div class="snake-upgrade-row">
+                <button id="btn-upgrade-snake" class="btn-upgrade-snake" type="button">
+                  Nâng cấp rắn
+                </button>
+                <span id="snake-upgrade-cost" class="snake-upgrade-cost">
+                  Phí: 60 🪙
+                </span>
               </div>
             </div>
 
