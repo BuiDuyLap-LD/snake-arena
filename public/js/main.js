@@ -90,6 +90,16 @@ class GameClient {
         description: "Mở khóa gói tăng tốc cho trận tiếp theo.",
       },
     ];
+    this.battlePassLevels = [
+      { level: 1, reward: { coins: 80 }, label: "Neon Badge" },
+      { level: 2, reward: { coins: 100 }, label: "Boost Ticket" },
+      { level: 3, reward: { coins: 120, shards: 1 }, label: "Rare Skin" },
+      { level: 4, reward: { coins: 160 }, label: "Trail Glow" },
+      { level: 5, reward: { coins: 180, tickets: 1 }, label: "Arena Pack" },
+      { level: 6, reward: { coins: 220 }, label: "Neon Frame" },
+      { level: 7, reward: { coins: 260, shards: 1 }, label: "Elite Skin" },
+      { level: 8, reward: { coins: 300 }, label: "Season Crown" },
+    ];
 
     this.initDOM();
     this.initRenderer();
@@ -122,6 +132,10 @@ class GameClient {
           tickets: parsed.tickets || 3,
           ownedItems: parsed.ownedItems || ["starter-cyan"],
           seasonXp: parsed.seasonXp || 0,
+          battlePassXp: parsed.battlePassXp || 0,
+          battlePassLevel: parsed.battlePassLevel || 1,
+          premiumPass: !!parsed.premiumPass,
+          quests: parsed.quests || this.getDefaultQuestState(),
         };
       }
     } catch (e) {
@@ -135,6 +149,25 @@ class GameClient {
       tickets: 3,
       ownedItems: ["starter-cyan"],
       seasonXp: 0,
+      battlePassXp: 0,
+      battlePassLevel: 1,
+      premiumPass: false,
+      quests: this.getDefaultQuestState(),
+    };
+  }
+
+  getDefaultQuestState() {
+    return {
+      daily: [
+        { id: "daily-win", type: "daily", title: "Thắng 1 trận", target: 1, progress: 0, reward: { coins: 50 }, claimed: false },
+        { id: "daily-power", type: "daily", title: "Dùng 3 power-up", target: 3, progress: 0, reward: { shards: 1 }, claimed: false },
+        { id: "daily-rank", type: "daily", title: "Đạt 1 trận Ranked", target: 1, progress: 0, reward: { tickets: 1 }, claimed: false },
+      ],
+      weekly: [
+        { id: "weekly-xp", type: "weekly", title: "Thu thập 250 XP", target: 250, progress: 0, reward: { coins: 180, shards: 1 }, claimed: false },
+        { id: "weekly-match", type: "weekly", title: "Chơi 5 trận", target: 5, progress: 0, reward: { coins: 120 }, claimed: false },
+        { id: "weekly-solo", type: "weekly", title: "Hoàn thành 2 trận Solo", target: 2, progress: 0, reward: { tickets: 2 }, claimed: false },
+      ],
     };
   }
 
@@ -186,7 +219,9 @@ class GameClient {
       this.currencyShards.textContent = String(this.playerProgress.shards || 0);
     }
     if (this.currencyTickets) {
-      this.currencyTickets.textContent = String(this.playerProgress.tickets || 0);
+      this.currencyTickets.textContent = String(
+        this.playerProgress.tickets || 0,
+      );
     }
     if (this.shopCoins) {
       this.shopCoins.textContent = String(this.playerProgress.coins || 0);
@@ -197,21 +232,125 @@ class GameClient {
     if (this.shopTickets) {
       this.shopTickets.textContent = String(this.playerProgress.tickets || 0);
     }
-
+    if (this.battlePassFill) {
+      const battleTarget = Math.max(100, (this.playerProgress.battlePassLevel || 1) * 120);
+      const battleProgress = this.playerProgress.battlePassXp || 0;
+      const battlePercent = Math.min(100, (battleProgress / battleTarget) * 100);
+      this.battlePassFill.style.width = `${battlePercent}%`;
+    }
+    if (this.battlePassLevelLabel) {
+      this.battlePassLevelLabel.textContent = `Lv. ${this.playerProgress.battlePassLevel || 1}`;
+    }
     if (this.myTierBadge) {
       this.myTierBadge.textContent = this.getCurrentTierName();
     }
+
+    this.renderBattlePassLevels();
+    this.renderQuests();
+  }
+
+  advanceQuestProgress(groupKey, questId, amount = 1) {
+    const group = this.playerProgress.quests?.[groupKey];
+    if (!group) return;
+    const quest = group.find((item) => item.id === questId);
+    if (!quest || quest.claimed) return;
+    quest.progress = Math.min(quest.target, (quest.progress || 0) + amount);
+    this.savePlayerProgress();
   }
 
   addPlayerXp(amount) {
     if (!amount) return;
     this.playerProgress.xp += amount;
-    while (this.playerProgress.xp >= this.getLevelTarget(this.playerProgress.level)) {
+    while (
+      this.playerProgress.xp >= this.getLevelTarget(this.playerProgress.level)
+    ) {
       this.playerProgress.xp -= this.getLevelTarget(this.playerProgress.level);
       this.playerProgress.level += 1;
     }
+    const xpBoost = Math.max(5, Math.floor(amount * 0.6));
+    this.playerProgress.battlePassXp = (this.playerProgress.battlePassXp || 0) + xpBoost;
+    while ((this.playerProgress.battlePassXp || 0) >= (this.playerProgress.battlePassLevel || 1) * 120) {
+      this.playerProgress.battlePassXp -= (this.playerProgress.battlePassLevel || 1) * 120;
+      this.playerProgress.battlePassLevel += 1;
+    }
+    const weeklyXpQuest = this.playerProgress.quests?.weekly?.find(
+      (quest) => quest.id === "weekly-xp",
+    );
+    if (weeklyXpQuest && !weeklyXpQuest.claimed) {
+      weeklyXpQuest.progress = Math.min(
+        weeklyXpQuest.target,
+        (weeklyXpQuest.progress || 0) + Math.max(10, Math.min(25, Math.floor(amount * 0.75))),
+      );
+    }
     this.savePlayerProgress();
     this.renderPlayerProgress();
+  }
+
+  renderBattlePassLevels() {
+    if (!this.battlePassGrid) return;
+    this.battlePassGrid.innerHTML = "";
+    this.battlePassLevels.forEach((passLevel) => {
+      const eligible = passLevel.level <= (this.playerProgress.battlePassLevel || 1);
+      const card = document.createElement("div");
+      card.className = `battle-pass-tier ${eligible ? "earned" : ""}`;
+      card.innerHTML = `
+        <span class="battle-pass-tier-label">Lv. ${passLevel.level}</span>
+        <span class="battle-pass-tier-reward">${passLevel.label}</span>
+        <small>${(passLevel.reward.coins || 0)} 🪙${(passLevel.reward.shards || 0) ? ` · ${passLevel.reward.shards} 💎` : ""}${(passLevel.reward.tickets || 0) ? ` · ${passLevel.reward.tickets} 🎫` : ""}</small>
+      `;
+      this.battlePassGrid.appendChild(card);
+    });
+  }
+
+  renderQuests() {
+    if (!this.questList) return;
+    const groups = Object.entries(this.playerProgress.quests || {});
+    this.questList.innerHTML = "";
+
+    groups.forEach(([groupKey, quests]) => {
+      quests.forEach((quest) => {
+        const card = document.createElement("div");
+        const complete = (quest.progress || 0) >= quest.target;
+        card.className = `quest-card ${complete ? "complete" : ""}`;
+        card.innerHTML = `
+          <div class="quest-main">
+            <div class="quest-label">${groupKey === "daily" ? "Daily" : "Weekly"}</div>
+            <div class="quest-title">${quest.title}</div>
+            <div class="quest-progress">${Math.min(quest.progress || 0, quest.target)} / ${quest.target}</div>
+          </div>
+          <button class="quest-button" data-quest-id="${quest.id}" data-group="${groupKey}" ${quest.claimed || !complete ? "disabled" : ""}>
+            ${quest.claimed ? "Đã nhận" : complete ? "Nhận thưởng" : "Chưa xong"}
+          </button>
+        `;
+        this.questList.appendChild(card);
+      });
+    });
+
+    this.questList.querySelectorAll(".quest-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const questId = button.dataset.questId;
+        const groupKey = button.dataset.group;
+        this.claimQuestReward(questId, groupKey);
+      });
+    });
+  }
+
+  claimQuestReward(questId, groupKey) {
+    const quest = this.playerProgress.quests[groupKey].find((item) => item.id === questId);
+    if (!quest || quest.claimed) return;
+    if ((quest.progress || 0) < quest.target) {
+      this.showToast("⚠️ Nhiệm vụ chưa hoàn thành.");
+      return;
+    }
+
+    if (quest.reward.coins) this.playerProgress.coins += quest.reward.coins;
+    if (quest.reward.shards) this.playerProgress.shards += quest.reward.shards;
+    if (quest.reward.tickets) this.playerProgress.tickets += quest.reward.tickets;
+    quest.claimed = true;
+    this.addPlayerXp(30);
+    this.savePlayerProgress();
+    this.renderPlayerProgress();
+    this.showToast("✅ Đã nhận thưởng nhiệm vụ!");
   }
 
   canAffordItem(item) {
@@ -317,6 +456,12 @@ class GameClient {
       this.currentUser.tier = this.getTierName(this.currentUser.highScore);
     }
 
+    this.advanceQuestProgress("daily", "daily-win", 1);
+    if (this.activeGameMode === "ranked") {
+      this.advanceQuestProgress("daily", "daily-rank", 1);
+    }
+    this.advanceQuestProgress("weekly", "weekly-match", 1);
+    this.addPlayerXp(Math.max(20, Math.floor(score / 80) + kills * 4));
     this.updateCareerUI();
   }
 
@@ -361,6 +506,11 @@ class GameClient {
     this.shopCoins = document.getElementById("shop-coins");
     this.shopShards = document.getElementById("shop-shards");
     this.shopTickets = document.getElementById("shop-tickets");
+    this.battlePassFill = document.getElementById("battle-pass-fill");
+    this.battlePassGrid = document.getElementById("battle-pass-grid");
+    this.battlePassLevelLabel = document.getElementById("battle-pass-level-label");
+    this.questList = document.getElementById("quest-list");
+    this.btnBattlePassPremium = document.getElementById("btn-battle-pass-premium");
     this.modeSolo5v5 = document.getElementById("mode-solo5v5");
     this.soloRoomEntry = document.getElementById("solo-room-entry");
     this.inputSoloRoomCode = document.getElementById("input-solo-room-code");
@@ -466,7 +616,9 @@ class GameClient {
     this.matchOverRoom = document.getElementById("match-over-room");
     this.soloResultPanel = document.getElementById("solo-result-panel");
     this.soloRedResultScore = document.getElementById("solo-red-result-score");
-    this.soloBlueResultScore = document.getElementById("solo-blue-result-score");
+    this.soloBlueResultScore = document.getElementById(
+      "solo-blue-result-score",
+    );
     this.soloWinnerBanner = document.getElementById("solo-winner-banner");
     this.podiumFirst = document.getElementById("podium-first");
     this.podiumSecond = document.getElementById("podium-second");
@@ -703,7 +855,8 @@ class GameClient {
     const red = state.red || [];
     const blue = state.blue || [];
     if (this.soloRedCount) this.soloRedCount.textContent = `${red.length} / 5`;
-    if (this.soloBlueCount) this.soloBlueCount.textContent = `${blue.length} / 5`;
+    if (this.soloBlueCount)
+      this.soloBlueCount.textContent = `${blue.length} / 5`;
 
     const renderRoster = (container, members, teamId) => {
       if (!container) return;
@@ -759,8 +912,7 @@ class GameClient {
         const minSize = state.minTeamSize || 2;
         const redMissing = Math.max(0, minSize - red.length);
         const blueMissing = Math.max(0, minSize - blue.length);
-        this.soloRoomStatus.textContent =
-          `Cần thêm ${redMissing} người đội Đỏ và ${blueMissing} người đội Xanh.`;
+        this.soloRoomStatus.textContent = `Cần thêm ${redMissing} người đội Đỏ và ${blueMissing} người đội Xanh.`;
       }
     }
   }
@@ -1064,11 +1216,7 @@ class GameClient {
         break;
 
       case "MATCH_OVER":
-        this.showMatchOverModal(
-          msg.rankings,
-          msg.intermissionDuration,
-          msg,
-        );
+        this.showMatchOverModal(msg.rankings, msg.intermissionDuration, msg);
         break;
 
       case "MATCH_STARTED":
@@ -1215,6 +1363,7 @@ class GameClient {
     }
 
     if (this.selectedGameMode === "solo5v5") {
+      this.advanceQuestProgress("weekly", "weekly-solo", 1);
       this.createSoloRoom();
       return;
     }
@@ -1296,6 +1445,7 @@ class GameClient {
   }
 
   usePowerup(type) {
+    this.advanceQuestProgress("daily", "daily-power", 1);
     this.ws.send(
       JSON.stringify({
         type: "USE_POWERUP",
@@ -1517,12 +1667,15 @@ class GameClient {
       if (teamResult.redScore === teamResult.blueScore) {
         this.matchOverTrophy.textContent = "🤝";
         this.matchOverTitle.textContent = "TRẬN ĐẤU HÒA!";
-        this.matchOverSubtitle.textContent = "Hai đội kết thúc với cùng tổng điểm.";
+        this.matchOverSubtitle.textContent =
+          "Hai đội kết thúc với cùng tổng điểm.";
         if (this.soloWinnerBanner) this.soloWinnerBanner.textContent = "HÒA";
       } else {
         this.matchOverTrophy.textContent = winnerTeam === "red" ? "🔴" : "🔵";
         this.matchOverTitle.textContent =
-          winnerTeam === "red" ? "ĐỘI ĐỎ CHIẾN THẮNG!" : "ĐỘI XANH CHIẾN THẮNG!";
+          winnerTeam === "red"
+            ? "ĐỘI ĐỎ CHIẾN THẮNG!"
+            : "ĐỘI XANH CHIẾN THẮNG!";
         this.matchOverSubtitle.textContent = myEntry
           ? winningEntry
             ? "Bạn cùng đồng đội đã giành chiến thắng."
@@ -2999,6 +3152,18 @@ class GameClient {
     }
     if (this.btnCloseShop) {
       this.btnCloseShop.addEventListener("click", () => this.closeShopModal());
+    }
+    if (this.btnBattlePassPremium) {
+      this.btnBattlePassPremium.addEventListener("click", () => {
+        this.playerProgress.premiumPass = !this.playerProgress.premiumPass;
+        this.savePlayerProgress();
+        this.renderPlayerProgress();
+        this.showToast(
+          this.playerProgress.premiumPass
+            ? "✅ Premium Pass đã kích hoạt."
+            : "ℹ️ Premium Pass đã tắt.",
+        );
+      });
     }
 
     if (this.btnOpenAuth)

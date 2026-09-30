@@ -756,7 +756,11 @@ html {
   padding: 14px;
   margin: 0 0 16px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(20, 33, 52, 0.92), rgba(7, 14, 24, 0.9));
+  background: linear-gradient(
+    135deg,
+    rgba(20, 33, 52, 0.92),
+    rgba(7, 14, 24, 0.9)
+  );
   border: 1px solid rgba(0, 240, 255, 0.18);
 }
 
@@ -856,6 +860,181 @@ html {
   font-size: 11px;
 }
 
+.battle-pass-panel,
+.quests-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(11, 19, 31, 0.92), rgba(8, 18, 26, 0.88));
+  border: 1px solid rgba(0, 240, 255, 0.14);
+}
+
+.battle-pass-header,
+.quests-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.battle-pass-title-wrap {
+  display: grid;
+  gap: 2px;
+}
+
+.battle-pass-tag,
+.quests-kicker {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.battle-pass-header h3,
+.quests-header h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.btn-battle-pass-premium {
+  border: 1px solid rgba(255, 190, 11, 0.35);
+  background: rgba(255, 190, 11, 0.12);
+  color: #ffe08f;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.battle-pass-track-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.battle-pass-track {
+  position: relative;
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.battle-pass-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #00f0ff, #00ff88, #ffbe0b);
+}
+
+.battle-pass-level-label {
+  min-width: 54px;
+  text-align: right;
+  color: #cdeaff;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.battle-pass-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.battle-pass-tier {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+}
+
+.battle-pass-tier.earned {
+  border-color: rgba(0, 240, 255, 0.4);
+  background: rgba(0, 240, 255, 0.08);
+  color: #d9f9ff;
+}
+
+.battle-pass-tier-label {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.battle-pass-tier-reward {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.quest-list {
+  display: grid;
+  gap: 10px;
+}
+
+.quest-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.quest-card.complete {
+  border-color: rgba(0, 255, 136, 0.32);
+  background: rgba(0, 255, 136, 0.06);
+}
+
+.quest-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.quest-label {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.quest-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.quest-progress {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.quest-button {
+  border: none;
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, #00f0ff, #80f7ff);
+  color: #061017;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.quest-button:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
 .shop-modal-card {
   width: min(820px, 92vw);
   max-height: 84vh;
@@ -924,9 +1103,18 @@ html {
   font-weight: 900;
 }
 
-.shop-item-badge.basic { background: rgba(148, 163, 184, 0.18); color: #dfe8f5; }
-.shop-item-badge.rare { background: rgba(0, 240, 255, 0.12); color: var(--primary-cyan); }
-.shop-item-badge.epic { background: rgba(189, 0, 255, 0.12); color: #d2a3ff; }
+.shop-item-badge.basic {
+  background: rgba(148, 163, 184, 0.18);
+  color: #dfe8f5;
+}
+.shop-item-badge.rare {
+  background: rgba(0, 240, 255, 0.12);
+  color: var(--primary-cyan);
+}
+.shop-item-badge.epic {
+  background: rgba(189, 0, 255, 0.12);
+  color: #d2a3ff;
+}
 
 .shop-item-type {
   color: #d4d9e1;
@@ -938,7 +1126,11 @@ html {
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(0, 240, 255, 0.16), rgba(255, 190, 11, 0.12));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 240, 255, 0.16),
+    rgba(255, 190, 11, 0.12)
+  );
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 26px;
   box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.04);
@@ -1920,7 +2112,11 @@ html {
   z-index: 190;
   padding: 20px;
   background:
-    radial-gradient(circle at 10% 0%, rgba(255, 139, 99, 0.12), transparent 34%),
+    radial-gradient(
+      circle at 10% 0%,
+      rgba(255, 139, 99, 0.12),
+      transparent 34%
+    ),
     rgba(3, 6, 12, 0.96);
 }
 
@@ -2034,8 +2230,12 @@ html {
   font-size: 18px;
 }
 
-.red-team h3 { color: #ff7284; }
-.blue-team h3 { color: #72baff; }
+.red-team h3 {
+  color: #ff7284;
+}
+.blue-team h3 {
+  color: #72baff;
+}
 
 .team-count {
   font-size: 13px;
@@ -2073,8 +2273,12 @@ html {
   width: 100%;
 }
 
-.red-team .team-pick-button { border-color: rgba(255, 74, 97, 0.4); }
-.blue-team .team-pick-button { border-color: rgba(67, 160, 255, 0.42); }
+.red-team .team-pick-button {
+  border-color: rgba(255, 74, 97, 0.4);
+}
+.blue-team .team-pick-button {
+  border-color: rgba(67, 160, 255, 0.42);
+}
 
 .solo-versus {
   align-self: center;
@@ -2972,8 +3176,12 @@ html {
   font-variant-numeric: tabular-nums;
 }
 
-.red-result strong { color: #ff7788; }
-.blue-result strong { color: #72baff; }
+.red-result strong {
+  color: #ff7788;
+}
+.blue-result strong {
+  color: #72baff;
+}
 
 .solo-result-center {
   display: grid;
