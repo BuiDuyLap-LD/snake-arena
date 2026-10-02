@@ -99,7 +99,11 @@ test("snake growth slows at 80 and 120 segments and stops at the hard cap", () =
   assert.equal(snake.body.length, Snake.MAX_BODY_LENGTH);
   assert.equal(snake.score, scoreAtCap + 50);
 
-  const largeFoodSnake = new Snake("large-food-growth-test", "Large Food", "#ffffff");
+  const largeFoodSnake = new Snake(
+    "large-food-growth-test",
+    "Large Food",
+    "#ffffff",
+  );
   largeFoodSnake.body = Array.from({ length: 79 }, () => ({ x: 0, y: 0 }));
   largeFoodSnake.grow(30);
   assert.equal(largeFoodSnake.body.length, 89);
@@ -112,7 +116,10 @@ test("player emotes broadcast once and reject invalid or rapid events", () => {
   });
   const messages = [];
   const player = {
-    ws: { readyState: 1, send: (message) => messages.push(JSON.parse(message)) },
+    ws: {
+      readyState: 1,
+      send: (message) => messages.push(JSON.parse(message)),
+    },
     snake: { alive: true },
   };
   room.players.set("player-1", player);
@@ -140,13 +147,20 @@ test("compressed snake snapshots preserve body length and reduce wire size", () 
 
   const full = snake.getSnapshot();
   const compact = snake.getSnapshotCompressed();
-  const fullWireSize = zlib.deflateRawSync(JSON.stringify(full), { level: 3 }).length;
-  const compactWireSize = zlib.deflateRawSync(JSON.stringify(compact), { level: 3 }).length;
+  const fullWireSize = zlib.deflateRawSync(JSON.stringify(full), {
+    level: 3,
+  }).length;
+  const compactWireSize = zlib.deflateRawSync(JSON.stringify(compact), {
+    level: 3,
+  }).length;
 
   assert.equal(compact.length, full.length);
   assert.equal(compact.bodyStep, 2);
   assert.equal(compact.body.length, 101);
-  assert.deepEqual(compact.body.at(-1), [Math.round(full.body.at(-1).x), Math.round(full.body.at(-1).y)]);
+  assert.deepEqual(compact.body.at(-1), [
+    Math.round(full.body.at(-1).x),
+    Math.round(full.body.at(-1).y),
+  ]);
   assert.equal(compact.teamId, full.teamId);
   assert.ok(compactWireSize < fullWireSize);
 });
@@ -161,7 +175,10 @@ test("game ticks broadcast compact snake bodies with team metadata", () => {
   snake.teamId = "blue";
   room.players.set(snake.id, {
     snake,
-    ws: { readyState: 1, send: (message) => messages.push(JSON.parse(message)) },
+    ws: {
+      readyState: 1,
+      send: (message) => messages.push(JSON.parse(message)),
+    },
   });
 
   room.broadcastSnapshot([snake]);

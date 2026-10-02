@@ -213,7 +213,10 @@
               </div>
             </div>
 
-            <section class="emote-loadout-panel" aria-labelledby="emote-loadout-title">
+            <section
+              class="emote-loadout-panel"
+              aria-labelledby="emote-loadout-title"
+            >
               <div class="emote-loadout-heading">
                 <div>
                   <span class="emote-loadout-kicker">QUICK EMOTES</span>
@@ -222,7 +225,9 @@
                 <strong id="emote-loadout-count">0/4</strong>
               </div>
               <div id="emote-loadout" class="emote-loadout-grid"></div>
-              <button id="btn-emote-shop" class="emote-shop-link" type="button">Mở bộ sưu tập biểu cảm</button>
+              <button id="btn-emote-shop" class="emote-shop-link" type="button">
+                Mở bộ sưu tập biểu cảm
+              </button>
             </section>
 
             <section
@@ -754,7 +759,11 @@
         </div>
       </div>
 
-      <div id="emote-hotbar" class="emote-hotbar hud-interactive" aria-label="Biểu cảm nhanh trong trận"></div>
+      <div
+        id="emote-hotbar"
+        class="emote-hotbar hud-interactive"
+        aria-label="Biểu cảm nhanh trong trận"
+      ></div>
 
       <!-- ===== MOBILE CONTROLS ===== -->
       <div class="mobile-controls" id="mobile-controls">
@@ -777,15 +786,6 @@
     <!-- ================= TOAST CONTAINER ================= -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- ================= MODAL: AUTHENTICATION (CỐ ĐỊNH TÀI KHOẢN) ================= -->
-    <div id="modal-auth" class="modal-overlay account-gate">
-      <div class="modal-content auth-modal-card">
-        <button id="btn-close-auth" class="modal-close-btn" title="Đóng">
-          ✕
-        </button>
-        <div style="font-size: 38px; margin-bottom: 6px">🛡️</div>
-        <h2
-          id="auth-title"
     <div
       id="modal-settings"
       class="modal-overlay settings-overlay hidden"
@@ -890,6 +890,15 @@
       </section>
     </div>
 
+    <!-- ================= MODAL: AUTHENTICATION (CỐ ĐỊNH TÀI KHOẢN) ================= -->
+    <div id="modal-auth" class="modal-overlay account-gate">
+      <div class="modal-content auth-modal-card">
+        <button id="btn-close-auth" class="modal-close-btn" title="Đóng">
+          ✕
+        </button>
+        <div style="font-size: 38px; margin-bottom: 6px">🛡️</div>
+        <h2
+          id="auth-title"
           class="death-title"
           style="
             color: var(--primary-cyan);
@@ -1425,17 +1434,53 @@
             <h3>Kho báu đấu trường</h3>
           </div>
           <div class="shop-wallet" aria-label="Số dư tài khoản">
-            <span class="shop-wallet-coins">🪙 <strong id="shop-coins">250</strong></span>
-            <span class="shop-wallet-shards">💎 <strong id="shop-shards">12</strong></span>
-            <span class="shop-wallet-tickets">🎫 <strong id="shop-tickets">3</strong></span>
+            <span class="shop-wallet-coins"
+              >🪙 <strong id="shop-coins">250</strong></span
+            >
+            <span class="shop-wallet-shards"
+              >💎 <strong id="shop-shards">12</strong></span
+            >
+            <span class="shop-wallet-tickets"
+              >🎫 <strong id="shop-tickets">3</strong></span
+            >
           </div>
         </div>
         <nav class="shop-categories" aria-label="Danh mục vật phẩm">
-          <button class="shop-category-button active" data-category="all" aria-pressed="true">Tất cả <span>14</span></button>
-          <button class="shop-category-button" data-category="skins" aria-pressed="false">Ngoại hình</button>
-          <button class="shop-category-button" data-category="trails" aria-pressed="false">Vệt sáng</button>
-          <button class="shop-category-button" data-category="emotes" aria-pressed="false">Biểu cảm</button>
-          <button class="shop-category-button" data-category="boosts" aria-pressed="false">Hỗ trợ</button>
+          <button
+            class="shop-category-button active"
+            data-category="all"
+            aria-pressed="true"
+          >
+            Tất cả <span>14</span>
+          </button>
+          <button
+            class="shop-category-button"
+            data-category="skins"
+            aria-pressed="false"
+          >
+            Ngoại hình
+          </button>
+          <button
+            class="shop-category-button"
+            data-category="trails"
+            aria-pressed="false"
+          >
+            Vệt sáng
+          </button>
+          <button
+            class="shop-category-button"
+            data-category="emotes"
+            aria-pressed="false"
+          >
+            Biểu cảm
+          </button>
+          <button
+            class="shop-category-button"
+            data-category="boosts"
+            aria-pressed="false"
+          >
+            Hỗ trợ
+          </button>
         </nav>
         <div class="shop-grid" id="shop-grid"></div>
       </div>

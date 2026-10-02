@@ -36,8 +36,18 @@ class GameClient {
     this.mapPresets = [
       { id: "neon-grid", label: "Neon Grid", icon: "🌃", arenaRadius: 2200 },
       { id: "ash-maze", label: "Ash Maze", icon: "🧭", arenaRadius: 2400 },
-      { id: "crystal-lake", label: "Crystal Lake", icon: "💎", arenaRadius: 2300 },
-      { id: "sunfire-arena", label: "Sunfire Arena", icon: "🔥", arenaRadius: 2100 },
+      {
+        id: "crystal-lake",
+        label: "Crystal Lake",
+        icon: "💎",
+        arenaRadius: 2300,
+      },
+      {
+        id: "sunfire-arena",
+        label: "Sunfire Arena",
+        icon: "🔥",
+        arenaRadius: 2100,
+      },
     ];
 
     // Account & Authentication
@@ -121,7 +131,8 @@ class GameClient {
         rarity: "EPIC",
         price: { coins: 260, tickets: 1 },
         bonus: "Bộ sưu tập boost",
-        description: "Linh kiện boost phiên bản giới hạn để bổ sung bộ sưu tập.",
+        description:
+          "Linh kiện boost phiên bản giới hạn để bổ sung bộ sưu tập.",
         stats: { speed: 0, boost: 2, magnet: 1, shield: 1 },
       },
       {
@@ -323,7 +334,8 @@ class GameClient {
     ];
     this.grantLevelEmotes(this.playerProgress.level);
     const equippedShopSkin = this.shopCatalog.find(
-      (item) => item.id === this.playerProgress.equippedSkin && item.type === "skin",
+      (item) =>
+        item.id === this.playerProgress.equippedSkin && item.type === "skin",
     );
     if (equippedShopSkin) this.selectedColor = equippedShopSkin.color;
     this.skinStatMap = {
@@ -348,25 +360,13 @@ class GameClient {
     this.initDOM();
     this.initRenderer();
     this.initInput();
+    this.gameSettings = this.loadGameSettings();
+    this.applyGameSettings();
     this.bindEvents();
     this.initLobby();
     this.startGameLoop();
   }
 
-  loadCareerStats() {
-    try {
-      const data = localStorage.getItem("snake_career_stats");
-      if (data) return JSON.parse(data);
-    } catch (e) {
-      console.warn("Could not read career stats:", e);
-    }
-    this.gameSettings = this.loadGameSettings();
-    this.applyGameSettings();
-    return { highScore: 0, totalKills: 0, matchesPlayed: 0 };
-  }
-
-  loadPlayerProgress() {
-    try {
   loadGameSettings() {
     const defaults = {
       soundEnabled: true,
@@ -470,6 +470,18 @@ class GameClient {
     this.btnOpenSettings.focus();
   }
 
+  loadCareerStats() {
+    try {
+      const data = localStorage.getItem("snake_career_stats");
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.warn("Could not read career stats:", e);
+    }
+    return { highScore: 0, totalKills: 0, matchesPlayed: 0 };
+  }
+
+  loadPlayerProgress() {
+    try {
       const data = localStorage.getItem("snake_player_progress");
       if (data) {
         const parsed = JSON.parse(data);
@@ -514,14 +526,62 @@ class GameClient {
   getDefaultQuestState() {
     return {
       daily: [
-        { id: "daily-win", type: "daily", title: "Thắng 1 trận", target: 1, progress: 0, reward: { coins: 50 }, claimed: false },
-        { id: "daily-power", type: "daily", title: "Dùng 3 power-up", target: 3, progress: 0, reward: { shards: 1 }, claimed: false },
-        { id: "daily-rank", type: "daily", title: "Đạt 1 trận Ranked", target: 1, progress: 0, reward: { tickets: 1 }, claimed: false },
+        {
+          id: "daily-win",
+          type: "daily",
+          title: "Thắng 1 trận",
+          target: 1,
+          progress: 0,
+          reward: { coins: 50 },
+          claimed: false,
+        },
+        {
+          id: "daily-power",
+          type: "daily",
+          title: "Dùng 3 power-up",
+          target: 3,
+          progress: 0,
+          reward: { shards: 1 },
+          claimed: false,
+        },
+        {
+          id: "daily-rank",
+          type: "daily",
+          title: "Đạt 1 trận Ranked",
+          target: 1,
+          progress: 0,
+          reward: { tickets: 1 },
+          claimed: false,
+        },
       ],
       weekly: [
-        { id: "weekly-xp", type: "weekly", title: "Thu thập 250 XP", target: 250, progress: 0, reward: { coins: 180, shards: 1 }, claimed: false },
-        { id: "weekly-match", type: "weekly", title: "Chơi 5 trận", target: 5, progress: 0, reward: { coins: 120 }, claimed: false },
-        { id: "weekly-solo", type: "weekly", title: "Hoàn thành 2 trận Solo", target: 2, progress: 0, reward: { tickets: 2 }, claimed: false },
+        {
+          id: "weekly-xp",
+          type: "weekly",
+          title: "Thu thập 250 XP",
+          target: 250,
+          progress: 0,
+          reward: { coins: 180, shards: 1 },
+          claimed: false,
+        },
+        {
+          id: "weekly-match",
+          type: "weekly",
+          title: "Chơi 5 trận",
+          target: 5,
+          progress: 0,
+          reward: { coins: 120 },
+          claimed: false,
+        },
+        {
+          id: "weekly-solo",
+          type: "weekly",
+          title: "Hoàn thành 2 trận Solo",
+          target: 2,
+          progress: 0,
+          reward: { tickets: 2 },
+          claimed: false,
+        },
       ],
     };
   }
@@ -551,7 +611,12 @@ class GameClient {
 
   getSelectedSkinStats() {
     const key = this.playerProgress.equippedSkin || "starter-cyan";
-    const base = this.skinStatMap[key] || { speed: 0, boost: 0, magnet: 0, shield: 0 };
+    const base = this.skinStatMap[key] || {
+      speed: 0,
+      boost: 0,
+      magnet: 0,
+      shield: 0,
+    };
     const levelBonus = (this.playerProgress.snakeLevel || 1) - 1;
     return {
       speed: Math.min(15, base.speed + levelBonus * 0.8),
@@ -572,10 +637,14 @@ class GameClient {
     if (this.snakeLevelBadge) {
       this.snakeLevelBadge.textContent = `Lv. ${level}`;
     }
-    if (this.statSpeed) this.statSpeed.textContent = `+${stats.speed.toFixed(1)}%`;
-    if (this.statBoost) this.statBoost.textContent = `+${stats.boost.toFixed(1)}%`;
-    if (this.statMagnet) this.statMagnet.textContent = `+${stats.magnet.toFixed(1)}%`;
-    if (this.statShield) this.statShield.textContent = `+${stats.shield.toFixed(1)}%`;
+    if (this.statSpeed)
+      this.statSpeed.textContent = `+${stats.speed.toFixed(1)}%`;
+    if (this.statBoost)
+      this.statBoost.textContent = `+${stats.boost.toFixed(1)}%`;
+    if (this.statMagnet)
+      this.statMagnet.textContent = `+${stats.magnet.toFixed(1)}%`;
+    if (this.statShield)
+      this.statShield.textContent = `+${stats.shield.toFixed(1)}%`;
     if (this.snakeUpgradeCost) {
       this.snakeUpgradeCost.textContent = `Phí: ${this.getSnakeUpgradeCost()} 🪙`;
     }
@@ -593,7 +662,9 @@ class GameClient {
     this.savePlayerProgress();
     this.renderPlayerProgress();
     this.renderSnakeStats();
-    this.showToast(`✅ Rắn đã được nâng cấp lên Lv. ${this.playerProgress.snakeLevel}.`);
+    this.showToast(
+      `✅ Rắn đã được nâng cấp lên Lv. ${this.playerProgress.snakeLevel}.`,
+    );
   }
 
   renderPlayerProgress() {
@@ -635,9 +706,15 @@ class GameClient {
       this.shopTickets.textContent = String(this.playerProgress.tickets || 0);
     }
     if (this.battlePassFill) {
-      const battleTarget = Math.max(100, (this.playerProgress.battlePassLevel || 1) * 120);
+      const battleTarget = Math.max(
+        100,
+        (this.playerProgress.battlePassLevel || 1) * 120,
+      );
       const battleProgress = this.playerProgress.battlePassXp || 0;
-      const battlePercent = Math.min(100, (battleProgress / battleTarget) * 100);
+      const battlePercent = Math.min(
+        100,
+        (battleProgress / battleTarget) * 100,
+      );
       this.battlePassFill.style.width = `${battlePercent}%`;
     }
     if (this.battlePassLevelLabel) {
@@ -675,9 +752,14 @@ class GameClient {
       this.grantLevelEmotes(this.playerProgress.level, true);
     }
     const xpBoost = Math.max(5, Math.floor(amount * 0.6));
-    this.playerProgress.battlePassXp = (this.playerProgress.battlePassXp || 0) + xpBoost;
-    while ((this.playerProgress.battlePassXp || 0) >= (this.playerProgress.battlePassLevel || 1) * 120) {
-      this.playerProgress.battlePassXp -= (this.playerProgress.battlePassLevel || 1) * 120;
+    this.playerProgress.battlePassXp =
+      (this.playerProgress.battlePassXp || 0) + xpBoost;
+    while (
+      (this.playerProgress.battlePassXp || 0) >=
+      (this.playerProgress.battlePassLevel || 1) * 120
+    ) {
+      this.playerProgress.battlePassXp -=
+        (this.playerProgress.battlePassLevel || 1) * 120;
       this.playerProgress.battlePassLevel += 1;
     }
     const weeklyXpQuest = this.playerProgress.quests?.weekly?.find(
@@ -686,7 +768,8 @@ class GameClient {
     if (weeklyXpQuest && !weeklyXpQuest.claimed) {
       weeklyXpQuest.progress = Math.min(
         weeklyXpQuest.target,
-        (weeklyXpQuest.progress || 0) + Math.max(10, Math.min(25, Math.floor(amount * 0.75))),
+        (weeklyXpQuest.progress || 0) +
+          Math.max(10, Math.min(25, Math.floor(amount * 0.75))),
       );
     }
     this.savePlayerProgress();
@@ -714,13 +797,18 @@ class GameClient {
     this.playerProgress.equippedEmotes = [...new Set(loadout)]
       .filter((id) => validIds.has(id) && owned.has(id))
       .slice(0, 4);
-    if (this.playerProgress.equippedEmotes.length === 0 && owned.has("emote-wave")) {
+    if (
+      this.playerProgress.equippedEmotes.length === 0 &&
+      owned.has("emote-wave")
+    ) {
       this.playerProgress.equippedEmotes = ["emote-wave"];
     }
     if (unlocked.length) {
       this.savePlayerProgress();
       if (notify) {
-        this.showToast(`🎭 Đã mở khóa: ${unlocked.map((emote) => emote.name).join(", ")}`);
+        this.showToast(
+          `🎭 Đã mở khóa: ${unlocked.map((emote) => emote.name).join(", ")}`,
+        );
       }
     }
     this.renderEmoteLoadout();
@@ -728,10 +816,21 @@ class GameClient {
   }
 
   setEmoteLoadout(slot, emoteId) {
-    const emote = GameClient.EMOTE_CATALOG.find((entry) => entry.id === emoteId);
-    if (emoteId && (!emote || !this.playerProgress.ownedItems.includes(emoteId))) return;
+    const emote = GameClient.EMOTE_CATALOG.find(
+      (entry) => entry.id === emoteId,
+    );
+    if (
+      emoteId &&
+      (!emote || !this.playerProgress.ownedItems.includes(emoteId))
+    )
+      return;
     const loadout = [...this.playerProgress.equippedEmotes];
-    if (emoteId && loadout.some((equippedId, index) => index !== slot && equippedId === emoteId)) {
+    if (
+      emoteId &&
+      loadout.some(
+        (equippedId, index) => index !== slot && equippedId === emoteId,
+      )
+    ) {
       this.showToast("Biểu cảm này đã nằm trong một ô khác.");
       this.renderEmoteLoadout();
       return;
@@ -755,7 +854,9 @@ class GameClient {
       this.emoteLoadout.appendChild(label);
     }
     if (this.emoteLoadoutCount) {
-      const count = (this.playerProgress.equippedEmotes || []).filter(Boolean).length;
+      const count = (this.playerProgress.equippedEmotes || []).filter(
+        Boolean,
+      ).length;
       this.emoteLoadoutCount.textContent = `${count}/4`;
     }
   }
@@ -771,16 +872,27 @@ class GameClient {
       button.className = "emote-hotbar-button hud-interactive";
       button.dataset.emoteId = emote?.id || "";
       button.disabled = !emote;
-      button.setAttribute("aria-label", emote ? `Dùng biểu cảm ${emote.name}` : `Ô biểu cảm ${slot + 1} trống`);
-      button.title = emote ? `${emote.name} · phím ${slot + 4}` : `Ô ${slot + 1} trống`;
+      button.setAttribute(
+        "aria-label",
+        emote ? `Dùng biểu cảm ${emote.name}` : `Ô biểu cảm ${slot + 1} trống`,
+      );
+      button.title = emote
+        ? `${emote.name} · phím ${slot + 4}`
+        : `Ô ${slot + 1} trống`;
       button.innerHTML = `<span>${emote?.icon || "＋"}</span><kbd>${slot + 4}</kbd>`;
       this.emoteHotbar.appendChild(button);
     }
   }
 
   useEmote(emoteId) {
-    if (!emoteId || !this.playerProgress.equippedEmotes.includes(emoteId)) return;
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.localPlayerId) return;
+    if (!emoteId || !this.playerProgress.equippedEmotes.includes(emoteId))
+      return;
+    if (
+      !this.ws ||
+      this.ws.readyState !== WebSocket.OPEN ||
+      !this.localPlayerId
+    )
+      return;
     this.ws.send(JSON.stringify({ type: "USE_EMOTE", emoteId }));
   }
 
@@ -788,13 +900,14 @@ class GameClient {
     if (!this.battlePassGrid) return;
     this.battlePassGrid.innerHTML = "";
     this.battlePassLevels.forEach((passLevel) => {
-      const eligible = passLevel.level <= (this.playerProgress.battlePassLevel || 1);
+      const eligible =
+        passLevel.level <= (this.playerProgress.battlePassLevel || 1);
       const card = document.createElement("div");
       card.className = `battle-pass-tier ${eligible ? "earned" : ""}`;
       card.innerHTML = `
         <span class="battle-pass-tier-label">Lv. ${passLevel.level}</span>
         <span class="battle-pass-tier-reward">${passLevel.label}</span>
-        <small>${(passLevel.reward.coins || 0)} 🪙${(passLevel.reward.shards || 0) ? ` · ${passLevel.reward.shards} 💎` : ""}${(passLevel.reward.tickets || 0) ? ` · ${passLevel.reward.tickets} 🎫` : ""}</small>
+        <small>${passLevel.reward.coins || 0} 🪙${passLevel.reward.shards || 0 ? ` · ${passLevel.reward.shards} 💎` : ""}${passLevel.reward.tickets || 0 ? ` · ${passLevel.reward.tickets} 🎫` : ""}</small>
       `;
       this.battlePassGrid.appendChild(card);
     });
@@ -834,7 +947,9 @@ class GameClient {
   }
 
   claimQuestReward(questId, groupKey) {
-    const quest = this.playerProgress.quests[groupKey].find((item) => item.id === questId);
+    const quest = this.playerProgress.quests[groupKey].find(
+      (item) => item.id === questId,
+    );
     if (!quest || quest.claimed) return;
     if ((quest.progress || 0) < quest.target) {
       this.showToast("⚠️ Nhiệm vụ chưa hoàn thành.");
@@ -843,7 +958,8 @@ class GameClient {
 
     if (quest.reward.coins) this.playerProgress.coins += quest.reward.coins;
     if (quest.reward.shards) this.playerProgress.shards += quest.reward.shards;
-    if (quest.reward.tickets) this.playerProgress.tickets += quest.reward.tickets;
+    if (quest.reward.tickets)
+      this.playerProgress.tickets += quest.reward.tickets;
     quest.claimed = true;
     this.addPlayerXp(30);
     this.savePlayerProgress();
@@ -906,7 +1022,12 @@ class GameClient {
 
   equipShopItem(itemId) {
     const item = this.shopCatalog.find((entry) => entry.id === itemId);
-    if (!item || item.type !== "skin" || !this.playerProgress.ownedItems.includes(itemId)) return;
+    if (
+      !item ||
+      item.type !== "skin" ||
+      !this.playerProgress.ownedItems.includes(itemId)
+    )
+      return;
     this.playerProgress.equippedSkin = itemId;
     this.selectedColor = item.color || this.selectedColor;
     this.savePlayerProgress();
@@ -919,27 +1040,49 @@ class GameClient {
   renderShopItems() {
     if (!this.shopGrid) return;
     this.shopGrid.innerHTML = "";
-    const allCount = this.modalShop?.querySelector('[data-category="all"] span');
+    const allCount = this.modalShop?.querySelector(
+      '[data-category="all"] span',
+    );
     if (allCount) allCount.textContent = String(this.shopCatalog.length);
-    const items = this.shopCategory === "all"
-      ? this.shopCatalog
-      : this.shopCatalog.filter((item) => item.category === this.shopCategory);
+    const items =
+      this.shopCategory === "all"
+        ? this.shopCatalog
+        : this.shopCatalog.filter(
+            (item) => item.category === this.shopCategory,
+          );
     items.forEach((item) => {
       const owned = this.playerProgress.ownedItems.includes(item.id);
       const affordable = this.canAffordItem(item);
       const equipped = this.playerProgress.equippedSkin === item.id;
-      const emoteEquipped = this.playerProgress.equippedEmotes.includes(item.id);
-      const buttonLabel = item.type === "emote" && owned
-        ? emoteEquipped ? "Đang dùng · gỡ" : "Trang bị"
-        : item.type === "skin" && owned
-        ? equipped ? "Đang trang bị" : "Trang bị"
-        : owned ? "Đã sở hữu" : affordable ? "Mua vật phẩm" : "Thiếu tài nguyên";
-      const buttonAction = item.type === "emote" && owned
-        ? "emote"
-        : item.type === "skin" && owned ? "equip" : "buy";
-      const disabled = item.type === "emote" && owned
-        ? false
-        : item.type === "skin" && owned ? equipped : owned || !affordable;
+      const emoteEquipped = this.playerProgress.equippedEmotes.includes(
+        item.id,
+      );
+      const buttonLabel =
+        item.type === "emote" && owned
+          ? emoteEquipped
+            ? "Đang dùng · gỡ"
+            : "Trang bị"
+          : item.type === "skin" && owned
+            ? equipped
+              ? "Đang trang bị"
+              : "Trang bị"
+            : owned
+              ? "Đã sở hữu"
+              : affordable
+                ? "Mua vật phẩm"
+                : "Thiếu tài nguyên";
+      const buttonAction =
+        item.type === "emote" && owned
+          ? "emote"
+          : item.type === "skin" && owned
+            ? "equip"
+            : "buy";
+      const disabled =
+        item.type === "emote" && owned
+          ? false
+          : item.type === "skin" && owned
+            ? equipped
+            : owned || !affordable;
       const card = document.createElement("div");
       card.className = `shop-item-card rarity-${item.rarity.toLowerCase()}`;
       card.innerHTML = `
@@ -965,8 +1108,10 @@ class GameClient {
 
     this.shopGrid.querySelectorAll(".btn-buy-item").forEach((button) => {
       button.addEventListener("click", () => {
-        if (button.dataset.action === "emote") this.toggleShopEmote(button.dataset.itemId);
-        else if (button.dataset.action === "equip") this.equipShopItem(button.dataset.itemId);
+        if (button.dataset.action === "emote")
+          this.toggleShopEmote(button.dataset.itemId);
+        else if (button.dataset.action === "equip")
+          this.equipShopItem(button.dataset.itemId);
         else this.buyShopItem(button.dataset.itemId);
       });
     });
@@ -974,11 +1119,13 @@ class GameClient {
 
   setShopCategory(category) {
     this.shopCategory = category;
-    this.modalShop?.querySelectorAll(".shop-category-button").forEach((button) => {
-      const active = button.dataset.category === category;
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-pressed", String(active));
-    });
+    this.modalShop
+      ?.querySelectorAll(".shop-category-button")
+      .forEach((button) => {
+        const active = button.dataset.category === category;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
     this.renderShopItems();
   }
 
@@ -1065,6 +1212,17 @@ class GameClient {
     this.modalFriends = document.getElementById("modal-friends");
     this.modalShop = document.getElementById("modal-shop");
     this.modalProfileCard = document.getElementById("modal-profile-card");
+    this.modalSettings = document.getElementById("modal-settings");
+    this.btnOpenSettings = document.getElementById("btn-open-settings");
+    this.btnCloseSettings = document.getElementById("btn-close-settings");
+    this.btnSettingsDone = document.getElementById("btn-settings-done");
+    this.settingSound = document.getElementById("setting-sound");
+    this.settingJoystick = document.getElementById("setting-joystick");
+    this.settingJoystickSize = document.getElementById("setting-joystick-size");
+    this.settingJoystickSizeValue = document.getElementById(
+      "setting-joystick-size-value",
+    );
+    this.controlSideButtons = document.querySelectorAll("[data-control-side]");
     this.invitePromptBox = document.getElementById("invite-prompt-box");
     this.toastContainer = document.getElementById("toast-container");
 
@@ -1092,9 +1250,13 @@ class GameClient {
     this.soloRoomRulesPanel = document.getElementById("solo-room-rules");
     this.battlePassFill = document.getElementById("battle-pass-fill");
     this.battlePassGrid = document.getElementById("battle-pass-grid");
-    this.battlePassLevelLabel = document.getElementById("battle-pass-level-label");
+    this.battlePassLevelLabel = document.getElementById(
+      "battle-pass-level-label",
+    );
     this.questList = document.getElementById("quest-list");
-    this.btnBattlePassPremium = document.getElementById("btn-battle-pass-premium");
+    this.btnBattlePassPremium = document.getElementById(
+      "btn-battle-pass-premium",
+    );
     this.snakeLevelBadge = document.getElementById("snake-level-badge");
     this.statSpeed = document.getElementById("stat-speed");
     this.statBoost = document.getElementById("stat-boost");
@@ -1167,7 +1329,9 @@ class GameClient {
     this.timerEl = document.getElementById("match-timer");
     this.playerCountEl = document.getElementById("player-count");
     this.connectionMonitor = document.getElementById("connection-monitor");
-    this.connectionStateLabel = document.getElementById("connection-state-label");
+    this.connectionStateLabel = document.getElementById(
+      "connection-state-label",
+    );
     this.statFps = document.getElementById("stat-fps");
     this.statPing = document.getElementById("stat-ping");
     this.teamSideBadge = document.getElementById("team-side-badge");
@@ -1212,17 +1376,6 @@ class GameClient {
     this.matchOverRoom = document.getElementById("match-over-room");
     this.soloResultPanel = document.getElementById("solo-result-panel");
     this.soloRedResultScore = document.getElementById("solo-red-result-score");
-    this.modalSettings = document.getElementById("modal-settings");
-    this.btnOpenSettings = document.getElementById("btn-open-settings");
-    this.btnCloseSettings = document.getElementById("btn-close-settings");
-    this.btnSettingsDone = document.getElementById("btn-settings-done");
-    this.settingSound = document.getElementById("setting-sound");
-    this.settingJoystick = document.getElementById("setting-joystick");
-    this.settingJoystickSize = document.getElementById("setting-joystick-size");
-    this.settingJoystickSizeValue = document.getElementById(
-      "setting-joystick-size-value",
-    );
-    this.controlSideButtons = document.querySelectorAll("[data-control-side]");
     this.soloBlueResultScore = document.getElementById(
       "solo-blue-result-score",
     );
@@ -3531,10 +3684,12 @@ class GameClient {
   openAuthModal(mode = "login") {
     this.authMode = mode;
     if (this.authInputPassword) {
-      this.authInputPassword.autocomplete = mode === "register" ? "new-password" : "current-password";
-      this.authInputPassword.placeholder = mode === "register"
-        ? "Tạo mật khẩu từ 12 đến 128 ký tự..."
-        : "Nhập mật khẩu (12 đến 128 ký tự)...";
+      this.authInputPassword.autocomplete =
+        mode === "register" ? "new-password" : "current-password";
+      this.authInputPassword.placeholder =
+        mode === "register"
+          ? "Tạo mật khẩu từ 12 đến 128 ký tự..."
+          : "Nhập mật khẩu (12 đến 128 ký tự)...";
     }
     this.tabLogin.classList.toggle("active", mode === "login");
     this.tabRegister.classList.toggle("active", mode === "register");
@@ -3727,14 +3882,18 @@ class GameClient {
         this.mapOptions.forEach((item) => item.classList.remove("active"));
         option.classList.add("active");
         this.selectedMapId = option.dataset.mapId || "neon-grid";
-        this.showToast(`🗺️ Bản đồ đã chọn: ${this.selectedMapId.replace("-", " ")}`);
+        this.showToast(
+          `🗺️ Bản đồ đã chọn: ${this.selectedMapId.replace("-", " ")}`,
+        );
       });
     });
 
     if (this.soloRuleOptions) {
       this.soloRuleOptions.forEach((option) => {
         option.addEventListener("click", () => {
-          this.soloRuleOptions.forEach((item) => item.classList.remove("active"));
+          this.soloRuleOptions.forEach((item) =>
+            item.classList.remove("active"),
+          );
           option.classList.add("active");
           this.selectedSoloRule = option.dataset.rule || "classic";
           this.showToast(`⚙️ Chế độ phòng riêng: ${this.selectedSoloRule}`);
@@ -3791,6 +3950,41 @@ class GameClient {
     this.btnJoin.addEventListener("click", () => this.joinGame());
     this.inputName.addEventListener("keydown", (e) => {
       if (e.key === "Enter") this.joinGame();
+    });
+
+    this.btnOpenSettings.addEventListener("click", () => this.openSettings());
+    this.btnCloseSettings.addEventListener("click", () => this.closeSettings());
+    this.btnSettingsDone.addEventListener("click", () => this.closeSettings());
+    this.modalSettings.addEventListener("click", (event) => {
+      if (event.target === this.modalSettings) this.closeSettings();
+    });
+    window.addEventListener("keydown", (event) => {
+      if (
+        event.key === "Escape" &&
+        !this.modalSettings.classList.contains("hidden")
+      ) {
+        this.closeSettings();
+      }
+    });
+    this.settingSound.addEventListener("change", () => {
+      this.setSoundEnabled(this.settingSound.checked);
+    });
+    this.settingJoystick.addEventListener("change", () => {
+      this.gameSettings.virtualJoystick = this.settingJoystick.checked;
+      this.applyGameSettings();
+      this.saveGameSettings();
+    });
+    this.controlSideButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        this.gameSettings.controlSide = button.dataset.controlSide;
+        this.applyGameSettings();
+        this.saveGameSettings();
+      });
+    });
+    this.settingJoystickSize.addEventListener("input", () => {
+      this.gameSettings.joystickSize = Number(this.settingJoystickSize.value);
+      this.applyGameSettings();
+      this.saveGameSettings();
     });
 
     this.btnRespawn.addEventListener("click", () => {
@@ -3852,15 +4046,22 @@ class GameClient {
 
     this.emoteLoadout?.addEventListener("change", (event) => {
       const select = event.target.closest("select[data-slot]");
-      if (select) this.setEmoteLoadout(Number(select.dataset.slot), select.value);
+      if (select)
+        this.setEmoteLoadout(Number(select.dataset.slot), select.value);
     });
     this.emoteHotbar?.addEventListener("click", (event) => {
       const button = event.target.closest(".emote-hotbar-button");
       if (button && !button.disabled) this.useEmote(button.dataset.emoteId);
     });
     window.addEventListener("keydown", (event) => {
-      if (event.repeat || !this.localPlayerId || !/^[4-7]$/.test(event.key)) return;
-      if (event.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
+      if (event.repeat || !this.localPlayerId || !/^[4-7]$/.test(event.key))
+        return;
+      if (
+        event.target.closest?.(
+          "input, textarea, select, [contenteditable='true']",
+        )
+      )
+        return;
       this.useEmote(this.playerProgress.equippedEmotes[Number(event.key) - 4]);
     });
 
@@ -3902,9 +4103,13 @@ class GameClient {
     if (this.btnCloseShop) {
       this.btnCloseShop.addEventListener("click", () => this.closeShopModal());
     }
-    this.modalShop?.querySelectorAll(".shop-category-button").forEach((button) => {
-      button.addEventListener("click", () => this.setShopCategory(button.dataset.category));
-    });
+    this.modalShop
+      ?.querySelectorAll(".shop-category-button")
+      .forEach((button) => {
+        button.addEventListener("click", () =>
+          this.setShopCategory(button.dataset.category),
+        );
+      });
     if (this.btnBattlePassPremium) {
       this.btnBattlePassPremium.addEventListener("click", () => {
         this.playerProgress.premiumPass = !this.playerProgress.premiumPass;
@@ -3949,41 +4154,6 @@ class GameClient {
     if (this.btnLobbyChatView)
       this.btnLobbyChatView.addEventListener("click", () =>
         this.openFriendsModal(),
-    this.btnOpenSettings.addEventListener("click", () => this.openSettings());
-    this.btnCloseSettings.addEventListener("click", () => this.closeSettings());
-    this.btnSettingsDone.addEventListener("click", () => this.closeSettings());
-    this.modalSettings.addEventListener("click", (event) => {
-      if (event.target === this.modalSettings) this.closeSettings();
-    });
-    window.addEventListener("keydown", (event) => {
-      if (
-        event.key === "Escape" &&
-        !this.modalSettings.classList.contains("hidden")
-      ) {
-        this.closeSettings();
-      }
-    });
-    this.settingSound.addEventListener("change", () => {
-      this.setSoundEnabled(this.settingSound.checked);
-    });
-    this.settingJoystick.addEventListener("change", () => {
-      this.gameSettings.virtualJoystick = this.settingJoystick.checked;
-      this.applyGameSettings();
-      this.saveGameSettings();
-    });
-    this.controlSideButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        this.gameSettings.controlSide = button.dataset.controlSide;
-        this.applyGameSettings();
-        this.saveGameSettings();
-      });
-    });
-    this.settingJoystickSize.addEventListener("input", () => {
-      this.gameSettings.joystickSize = Number(this.settingJoystickSize.value);
-      this.applyGameSettings();
-      this.saveGameSettings();
-    });
-
       );
     if (this.btnOpenFriends)
       this.btnOpenFriends.addEventListener("click", () =>
