@@ -62,6 +62,12 @@ class GameClient {
     this.lastLeaderboardRender = 0;
     this.lastTimerText = "";
     this.lastPlayerCountText = "";
+    this.isInRankedMatch = false;
+    this.fpsWindowStartedAt = 0;
+    this.fpsFrameCount = 0;
+    this.lastPingSentAt = 0;
+    this.pendingPing = null;
+    this.nextPingId = 1;
 
     // Career stats
     this.careerStats = this.loadCareerStats();
@@ -1055,6 +1061,10 @@ class GameClient {
     // In-Game HUD Elements
     this.timerEl = document.getElementById("match-timer");
     this.playerCountEl = document.getElementById("player-count");
+    this.connectionMonitor = document.getElementById("connection-monitor");
+    this.connectionStateLabel = document.getElementById("connection-state-label");
+    this.statFps = document.getElementById("stat-fps");
+    this.statPing = document.getElementById("stat-ping");
     this.teamSideBadge = document.getElementById("team-side-badge");
     this.leaderboardEl = document.getElementById("leaderboard-list");
     this.leaderboardPanel = document.getElementById("leaderboard-panel");
@@ -1567,6 +1577,9 @@ class GameClient {
 
     this.ws.onopen = () => {
       console.log("[Client] Connected to server socket.");
+      if (this.isInRankedMatch) {
+        this.setConnectionQuality("checking", "ĐANG ĐO");
+      }
       const playerName = this.currentUser
         ? this.currentUser.username
         : this.inputName.value.trim() || "Viper";
@@ -1593,6 +1606,10 @@ class GameClient {
 
     this.ws.onclose = () => {
       console.warn("[Client] Disconnected. Reconnecting in 2s...");
+      this.pendingPing = null;
+      if (this.isInRankedMatch) {
+        this.setConnectionQuality("offline", "MẤT KẾT NỐI");
+      }
       if (this.currentUser) {
         setTimeout(() => this.connectWebSocket(), 2000);
       }
@@ -1609,6 +1626,21 @@ class GameClient {
         this.socketId = msg.socketId;
         if (msg.leaderboard) this.renderGlobalLeaderboard(msg.leaderboard);
         if (msg.lobbyChat) this.renderLobbyChatHistory(msg.lobbyChat);
+        break;
+
+      case "LATENCY_PONG":
+        if (this.pendingPing && msg.id === this.pendingPing.id) {
+          const ping = Math.round(performance.now() - this.pendingPing.sentAt);
+          this.pendingPing = null;
+          this.statPing.textContent = ping;
+          if (ping < 100) {
+            this.setConnectionQuality("good", "KẾT NỐI TỐT");
+          } else if (ping < 220) {
+            this.setConnectionQuality("fair", "ĐỘ TRỄ CAO");
+          } else {
+            this.setConnectionQuality("poor", "MẠNG CHẬM");
+          }
+        }
         break;
 
       case "SOLO_ROOM_READY":
@@ -1662,6 +1694,20 @@ class GameClient {
       case "INIT_GAME":
         this.localPlayerId = msg.playerId;
         this.activeGameMode = msg.mode || this.selectedGameMode;
+        this.isInRankedMatch = this.activeGameMode === "ranked";
+        this.connectionMonitor.classList.toggle(
+          "hidden",
+          !this.isInRankedMatch,
+        );
+        this.statFps.textContent = "--";
+        this.statPing.textContent = "--";
+        this.pendingPing = null;
+        this.lastPingSentAt = 0;
+        this.fpsWindowStartedAt = 0;
+        this.fpsFrameCount = 0;
+        if (this.isInRankedMatch) {
+          this.setConnectionQuality("checking", "ĐANG ĐO");
+        }
         if (msg.roomCode) this.roomCode = msg.roomCode;
         if (this.modalSoloRoom) this.modalSoloRoom.classList.add("hidden");
         this.screenLobby.classList.add("hidden");
@@ -1890,6 +1936,9 @@ class GameClient {
   }
 
   returnToLobby() {
+    this.isInRankedMatch = false;
+    this.connectionMonitor.classList.add("hidden");
+    this.pendingPing = null;
     this.modalDeath.classList.add("hidden");
     this.modalMatchOver.classList.add("hidden");
     this.screenLobby.classList.remove("hidden");
@@ -1905,6 +1954,47 @@ class GameClient {
     } else {
       this.fetchGlobalLeaderboard();
     }
+  }
+
+  setConnectionQuality(quality, label) {
+    if (!this.connectionMonitor) return;
+    this.connectionMonitor.dataset.quality = quality;
+    this.connectionStateLabel.textContent = label;
+  }
+
+  updatePerformanceMonitor(timestamp) {
+    if (!this.isInRankedMatch) return;
+
+    this.fpsFrameCount++;
+    if (!this.fpsWindowStartedAt) this.fpsWindowStartedAt = timestamp;
+    const elapsed = timestamp - this.fpsWindowStartedAt;
+    if (elapsed >= 1000) {
+      this.statFps.textContent = Math.round(
+        (this.fpsFrameCount * 1000) / elapsed,
+      );
+      this.fpsFrameCount = 0;
+      this.fpsWindowStartedAt = timestamp;
+    }
+
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this.setConnectionQuality("offline", "MẤT KẾT NỐI");
+      return;
+    }
+
+    if (this.pendingPing) {
+      if (timestamp - this.pendingPing.sentAt >= 5000) {
+        this.pendingPing = null;
+        this.setConnectionQuality("poor", "MẤT GÓI TIN");
+      } else {
+        return;
+      }
+    }
+
+    if (timestamp - this.lastPingSentAt < 2000) return;
+    const id = this.nextPingId++;
+    this.lastPingSentAt = timestamp;
+    this.pendingPing = { id, sentAt: timestamp };
+    this.ws.send(JSON.stringify({ type: "LATENCY_PING", id }));
   }
 
   sendInputIfChanged() {
@@ -3875,6 +3965,7 @@ class GameClient {
         this.currentInput,
         this.powerups,
       );
+      this.updatePerformanceMonitor(time);
 
       requestAnimationFrame(loop);
     };

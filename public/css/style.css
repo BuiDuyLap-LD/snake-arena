@@ -2403,6 +2403,122 @@ html {
   color: #92cbff;
 }
 
+.connection-monitor {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 132px;
+  padding: 9px 11px 8px;
+  color: #ecfdf5;
+  background: rgba(5, 13, 19, 0.86);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  font-variant-numeric: tabular-nums;
+}
+
+.connection-monitor-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+  color: #a8bac5;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.connection-status-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #94a3b8;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.connection-monitor-metrics {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.connection-metric {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.connection-metric-label {
+  color: #81929d;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.connection-metric strong {
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.connection-metric small {
+  margin-left: 2px;
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.connection-metric-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(148, 163, 184, 0.25);
+}
+
+.connection-signal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+  margin-left: auto;
+}
+
+.connection-signal-bars i {
+  width: 3px;
+  height: 5px;
+  border-radius: 1px;
+  background: #52616b;
+}
+
+.connection-signal-bars i:nth-child(2) {
+  height: 9px;
+}
+
+.connection-signal-bars i:nth-child(3) {
+  height: 13px;
+}
+
+.connection-monitor[data-quality="good"] .connection-status-dot,
+.connection-monitor[data-quality="good"] .connection-signal-bars i {
+  color: #38e59b;
+  background: #38e59b;
+}
+
+.connection-monitor[data-quality="fair"] .connection-status-dot,
+.connection-monitor[data-quality="fair"] .connection-signal-bars i:nth-child(-n + 2) {
+  color: #f4c95d;
+  background: #f4c95d;
+}
+
+.connection-monitor[data-quality="poor"] .connection-status-dot,
+.connection-monitor[data-quality="poor"] .connection-signal-bars i:first-child,
+.connection-monitor[data-quality="offline"] .connection-status-dot,
+.connection-monitor[data-quality="offline"] .connection-signal-bars i:first-child {
+  color: #ff667a;
+  background: #ff667a;
+}
+
 /* In-game Match Leaderboard */
 .leaderboard-panel {
   position: absolute;
@@ -3594,6 +3710,13 @@ html {
   .match-timer {
     font-size: 15px;
     gap: 4px;
+  }
+
+  .connection-monitor {
+    top: 52px;
+    left: 8px;
+    width: 124px;
+    padding: 7px 9px 6px;
   }
 
   .player-count-badge {

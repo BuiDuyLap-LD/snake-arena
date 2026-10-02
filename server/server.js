@@ -329,7 +329,9 @@ wss.on("connection", (ws) => {
       const data = JSON.parse(message);
 
       // 1. Lobby Auth (bind token / guest info as soon as page loads)
-      if (data.type === "LOBBY_AUTH") {
+      if (data.type === "LATENCY_PING") {
+        ws.send(JSON.stringify({ type: "LATENCY_PONG", id: data.id }));
+      } else if (data.type === "LOBBY_AUTH") {
         const user = socialManager.authenticateSocket(
           socketId,
           data.token,

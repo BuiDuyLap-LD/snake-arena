@@ -634,6 +634,32 @@
         <div id="player-count" class="player-count-badge">👥 1 người chơi</div>
       </div>
 
+      <section
+        id="connection-monitor"
+        class="connection-monitor hidden"
+        data-quality="checking"
+        aria-label="Hiệu năng và kết nối"
+      >
+        <div class="connection-monitor-state">
+          <span class="connection-status-dot" aria-hidden="true"></span>
+          <span id="connection-state-label">ĐANG ĐO</span>
+        </div>
+        <div class="connection-monitor-metrics">
+          <div class="connection-metric">
+            <span class="connection-metric-label">FPS</span>
+            <strong id="stat-fps">--</strong>
+          </div>
+          <span class="connection-metric-divider" aria-hidden="true"></span>
+          <div class="connection-metric">
+            <span class="connection-metric-label">PING</span>
+            <strong><span id="stat-ping">--</span><small>ms</small></strong>
+          </div>
+          <span class="connection-signal-bars" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </span>
+        </div>
+      </section>
+
       <!-- Kill Feed -->
       <div id="kill-feed" class="kill-feed"></div>
 
