@@ -191,8 +191,8 @@ class GameRenderer {
         snake.angle = (snake.angle + Math.PI * 2) % (Math.PI * 2);
 
         let speed = 190;
-        if (isNitro) speed = 405;
-        else if (currentInput.boosting) speed = 330;
+        if (isNitro) speed = 190 * 1.9;
+        else if (currentInput.boosting && snake.length > 12) speed = 330;
 
         snake.head.x += Math.cos(snake.angle) * speed * dt;
         snake.head.y += Math.sin(snake.angle) * speed * dt;
