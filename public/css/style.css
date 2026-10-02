@@ -3723,6 +3723,15 @@ body.virtual-controls-enabled.controls-right .boost-touch-btn {
 }
 
 @media (min-width: 769px) {
+  body.virtual-controls-enabled .stats-panel {
+    bottom: calc(25px + 130px * var(--joystick-scale, 1) + 16px);
+  }
+
+  body.virtual-controls-enabled.controls-right .stats-panel {
+    right: 20px;
+    left: auto;
+  }
+
   body.virtual-controls-enabled.controls-right .minimap-container {
     top: 104px;
     right: auto;
@@ -4036,6 +4045,21 @@ body.virtual-joystick-hidden .boost-touch-btn {
     padding: 8px 10px;
     border-radius: 12px;
     z-index: 60;
+  }
+
+  body.virtual-controls-enabled.controls-right .leaderboard-panel {
+    top: 150px;
+    right: auto;
+    left: 8px;
+  }
+
+  @media (max-height: 520px) {
+    body.virtual-controls-enabled.controls-right .leaderboard-panel {
+      top: auto;
+      right: auto;
+      bottom: 126px;
+      left: 8px;
+    }
   }
 
   .leaderboard-title {
