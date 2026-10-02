@@ -1,6 +1,10 @@
 // server/Snake.js
 
 class Snake {
+  static SLOW_GROWTH_THRESHOLD = 80;
+  static VERY_SLOW_GROWTH_THRESHOLD = 120;
+  static MAX_BODY_LENGTH = 160;
+
   constructor(
     id,
     name,
@@ -49,6 +53,7 @@ class Snake {
     this.radius = this.baseRadius;
     this.segmentDist = 12;
     this.initialSegments = 22;
+    this.growthProgress = 0;
 
     const startX = spawnPos ? spawnPos.x : (Math.random() - 0.5) * 1200;
     const startY = spawnPos ? spawnPos.y : (Math.random() - 0.5) * 1200;
@@ -242,12 +247,33 @@ class Snake {
 
   grow(value = 1) {
     this.score += value * 10;
+    if (this.body.length >= Snake.MAX_BODY_LENGTH) {
+      this.growthProgress = 0;
+      return;
+    }
+
     const segmentsToAdd = Math.max(1, Math.floor(value / 1.5));
     const lastSeg = this.body[this.body.length - 1] || this.head;
 
     for (let i = 0; i < segmentsToAdd; i++) {
-      this.body.push({ x: lastSeg.x, y: lastSeg.y });
+      if (this.body.length >= Snake.MAX_BODY_LENGTH) {
+        this.growthProgress = 0;
+        break;
+      }
+
+      const growthRate =
+        this.body.length >= Snake.VERY_SLOW_GROWTH_THRESHOLD
+          ? 20
+          : this.body.length >= Snake.SLOW_GROWTH_THRESHOLD
+            ? 50
+            : 100;
+      this.growthProgress += growthRate;
+      if (this.growthProgress >= 100) {
+        this.growthProgress -= 100;
+        this.body.push({ x: lastSeg.x, y: lastSeg.y });
+      }
     }
+    if (this.body.length >= Snake.MAX_BODY_LENGTH) this.growthProgress = 0;
   }
 
   updateBotAI(dt, arenaRadius, foods, allSnakes) {

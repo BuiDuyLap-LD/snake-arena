@@ -68,6 +68,43 @@ test("Nitro is a short burst above normal boost speed", () => {
   assert.ok(snake.speed > snake.boostSpeed);
 });
 
+test("snake growth slows at 80 and 120 segments and stops at the hard cap", () => {
+  const snake = new Snake("growth-test", "Growth Test", "#ffffff");
+  snake.body = Array.from({ length: 79 }, () => ({ x: 0, y: 0 }));
+
+  snake.grow(1);
+  assert.equal(snake.body.length, 80);
+  snake.grow(1);
+  assert.equal(snake.body.length, 80);
+  snake.grow(1);
+  assert.equal(snake.body.length, 81);
+
+  snake.body = Array.from({ length: 120 }, () => ({ x: 0, y: 0 }));
+  snake.growthProgress = 0;
+  snake.grow(1);
+  assert.equal(snake.body.length, 120);
+  for (let i = 0; i < 4; i++) snake.grow(1);
+  assert.equal(snake.body.length, 121);
+
+  snake.body = Array.from({ length: Snake.MAX_BODY_LENGTH - 1 }, () => ({
+    x: 0,
+    y: 0,
+  }));
+  snake.growthProgress = 0;
+  for (let i = 0; i < 5; i++) snake.grow(1);
+  assert.equal(snake.body.length, Snake.MAX_BODY_LENGTH);
+
+  const scoreAtCap = snake.score;
+  snake.grow(5);
+  assert.equal(snake.body.length, Snake.MAX_BODY_LENGTH);
+  assert.equal(snake.score, scoreAtCap + 50);
+
+  const largeFoodSnake = new Snake("large-food-growth-test", "Large Food", "#ffffff");
+  largeFoodSnake.body = Array.from({ length: 79 }, () => ({ x: 0, y: 0 }));
+  largeFoodSnake.grow(30);
+  assert.equal(largeFoodSnake.body.length, 89);
+});
+
 test("player emotes broadcast once and reject invalid or rapid events", () => {
   const room = new GameRoom("emote-test", {
     botsEnabled: false,
