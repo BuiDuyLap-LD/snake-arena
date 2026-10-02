@@ -79,8 +79,14 @@
               >
             </button>
 
-            <button id="btn-lobby-sound" class="btn-icon-pill" title="Âm thanh">
-              🔊
+            <button
+              id="btn-open-settings"
+              class="btn-icon-pill settings-open-button"
+              type="button"
+              title="Cài đặt"
+              aria-label="Mở cài đặt"
+            >
+              ⚙
             </button>
           </div>
         </header>
@@ -753,7 +759,7 @@
       <!-- ===== MOBILE CONTROLS ===== -->
       <div class="mobile-controls" id="mobile-controls">
         <!-- Virtual Joystick -->
-        <div class="joystick-zone" id="joystick-zone">
+        <div class="joystick-zone hud-interactive" id="joystick-zone">
           <div class="joystick-base" id="joystick-base">
             <div class="joystick-label">🕹️</div>
             <div class="joystick-thumb" id="joystick-thumb"></div>
@@ -780,6 +786,110 @@
         <div style="font-size: 38px; margin-bottom: 6px">🛡️</div>
         <h2
           id="auth-title"
+    <div
+      id="modal-settings"
+      class="modal-overlay settings-overlay hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
+    >
+      <section class="settings-card">
+        <header class="settings-header">
+          <div>
+            <span class="settings-kicker">PLAYER SETTINGS</span>
+            <h2 id="settings-title">Cài đặt trò chơi</h2>
+          </div>
+          <button
+            id="btn-close-settings"
+            class="settings-close"
+            type="button"
+            aria-label="Đóng cài đặt"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div class="settings-section">
+          <h3>Âm thanh</h3>
+          <label class="settings-toggle-row">
+            <span class="settings-option-copy">
+              <strong>Âm thanh trong game</strong>
+              <small>Hiệu ứng và âm báo</small>
+            </span>
+            <input
+              id="setting-sound"
+              class="settings-switch-input"
+              type="checkbox"
+            />
+            <span class="settings-switch-track" aria-hidden="true"></span>
+          </label>
+        </div>
+
+        <div class="settings-section">
+          <h3>Điều khiển</h3>
+          <label class="settings-toggle-row">
+            <span class="settings-option-copy">
+              <strong>Cần điều khiển ảo</strong>
+              <small>Hiện trên màn hình chơi</small>
+            </span>
+            <input
+              id="setting-joystick"
+              class="settings-switch-input"
+              type="checkbox"
+            />
+            <span class="settings-switch-track" aria-hidden="true"></span>
+          </label>
+
+          <div class="settings-control-row">
+            <div class="settings-option-copy">
+              <strong>Tay điều khiển</strong>
+              <small>Đổi vị trí joystick và nút tăng tốc</small>
+            </div>
+            <div
+              class="settings-segmented"
+              role="group"
+              aria-label="Tay điều khiển"
+            >
+              <button
+                type="button"
+                data-control-side="left"
+                aria-pressed="true"
+              >
+                Trái
+              </button>
+              <button
+                type="button"
+                data-control-side="right"
+                aria-pressed="false"
+              >
+                Phải
+              </button>
+            </div>
+          </div>
+
+          <label class="settings-range-row" for="setting-joystick-size">
+            <span class="settings-option-copy">
+              <strong>Cỡ joystick</strong>
+              <small id="setting-joystick-size-value">100%</small>
+            </span>
+            <input
+              id="setting-joystick-size"
+              type="range"
+              min="80"
+              max="130"
+              step="10"
+              value="100"
+            />
+          </label>
+        </div>
+
+        <footer class="settings-footer">
+          <span>Lưu tự động trên thiết bị này</span>
+          <button id="btn-settings-done" type="button">Xong</button>
+        </footer>
+      </section>
+    </div>
+
           class="death-title"
           style="
             color: var(--primary-cyan);

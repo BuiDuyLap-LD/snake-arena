@@ -360,11 +360,116 @@ class GameClient {
     } catch (e) {
       console.warn("Could not read career stats:", e);
     }
+    this.gameSettings = this.loadGameSettings();
+    this.applyGameSettings();
     return { highScore: 0, totalKills: 0, matchesPlayed: 0 };
   }
 
   loadPlayerProgress() {
     try {
+  loadGameSettings() {
+    const defaults = {
+      soundEnabled: true,
+      virtualJoystick:
+        window.matchMedia("(pointer: coarse)").matches ||
+        window.innerWidth <= 768,
+      controlSide: "left",
+      joystickSize: 100,
+    };
+
+    try {
+      const saved = JSON.parse(localStorage.getItem("snake_game_settings"));
+      if (!saved || typeof saved !== "object") return defaults;
+
+      const joystickSize = Number(saved.joystickSize);
+      return {
+        soundEnabled:
+          typeof saved.soundEnabled === "boolean"
+            ? saved.soundEnabled
+            : defaults.soundEnabled,
+        virtualJoystick:
+          typeof saved.virtualJoystick === "boolean"
+            ? saved.virtualJoystick
+            : defaults.virtualJoystick,
+        controlSide: saved.controlSide === "right" ? "right" : "left",
+        joystickSize: Number.isFinite(joystickSize)
+          ? Math.min(130, Math.max(80, Math.round(joystickSize / 10) * 10))
+          : defaults.joystickSize,
+      };
+    } catch (error) {
+      console.warn("Could not read game settings:", error);
+      return defaults;
+    }
+  }
+
+  saveGameSettings() {
+    try {
+      localStorage.setItem(
+        "snake_game_settings",
+        JSON.stringify(this.gameSettings),
+      );
+    } catch (error) {
+      console.warn("Could not save game settings:", error);
+    }
+  }
+
+  applyGameSettings() {
+    const settings = this.gameSettings;
+    const hasTouchControls =
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.innerWidth <= 768;
+
+    window.soundEngine.enabled = settings.soundEnabled;
+    this.settingSound.checked = settings.soundEnabled;
+    this.settingJoystick.checked = settings.virtualJoystick;
+    this.settingJoystickSize.value = String(settings.joystickSize);
+    this.settingJoystickSize.disabled = !settings.virtualJoystick;
+    this.settingJoystickSizeValue.textContent = `${settings.joystickSize}%`;
+    this.inputManager.joystickMaxDist = 38 * (settings.joystickSize / 100);
+    document.documentElement.style.setProperty(
+      "--joystick-scale",
+      String(settings.joystickSize / 100),
+    );
+    document.body.classList.toggle(
+      "virtual-controls-enabled",
+      hasTouchControls || settings.virtualJoystick,
+    );
+    document.body.classList.toggle(
+      "virtual-joystick-hidden",
+      !settings.virtualJoystick,
+    );
+    document.body.classList.toggle(
+      "controls-right",
+      settings.controlSide === "right",
+    );
+
+    this.controlSideButtons.forEach((button) => {
+      button.setAttribute(
+        "aria-pressed",
+        String(button.dataset.controlSide === settings.controlSide),
+      );
+    });
+    if (this.btnMute) {
+      this.btnMute.textContent = settings.soundEnabled ? "🔊" : "🔇";
+    }
+  }
+
+  setSoundEnabled(enabled) {
+    this.gameSettings.soundEnabled = enabled;
+    this.applyGameSettings();
+    this.saveGameSettings();
+  }
+
+  openSettings() {
+    this.modalSettings.classList.remove("hidden");
+    this.settingSound.focus();
+  }
+
+  closeSettings() {
+    this.modalSettings.classList.add("hidden");
+    this.btnOpenSettings.focus();
+  }
+
       const data = localStorage.getItem("snake_player_progress");
       if (data) {
         const parsed = JSON.parse(data);
@@ -1107,6 +1212,17 @@ class GameClient {
     this.matchOverRoom = document.getElementById("match-over-room");
     this.soloResultPanel = document.getElementById("solo-result-panel");
     this.soloRedResultScore = document.getElementById("solo-red-result-score");
+    this.modalSettings = document.getElementById("modal-settings");
+    this.btnOpenSettings = document.getElementById("btn-open-settings");
+    this.btnCloseSettings = document.getElementById("btn-close-settings");
+    this.btnSettingsDone = document.getElementById("btn-settings-done");
+    this.settingSound = document.getElementById("setting-sound");
+    this.settingJoystick = document.getElementById("setting-joystick");
+    this.settingJoystickSize = document.getElementById("setting-joystick-size");
+    this.settingJoystickSizeValue = document.getElementById(
+      "setting-joystick-size-value",
+    );
+    this.controlSideButtons = document.querySelectorAll("[data-control-side]");
     this.soloBlueResultScore = document.getElementById(
       "solo-blue-result-score",
     );
@@ -3709,10 +3825,7 @@ class GameClient {
     }
 
     const toggleSound = () => {
-      const enabled = window.soundEngine.toggle();
-      const icon = enabled ? "🔊" : "🔇";
-      if (this.btnMute) this.btnMute.textContent = icon;
-      if (this.btnLobbySound) this.btnLobbySound.textContent = icon;
+      this.setSoundEnabled(!this.gameSettings.soundEnabled);
     };
     if (this.btnMute) this.btnMute.addEventListener("click", toggleSound);
     if (this.btnLobbySound)
@@ -3836,6 +3949,41 @@ class GameClient {
     if (this.btnLobbyChatView)
       this.btnLobbyChatView.addEventListener("click", () =>
         this.openFriendsModal(),
+    this.btnOpenSettings.addEventListener("click", () => this.openSettings());
+    this.btnCloseSettings.addEventListener("click", () => this.closeSettings());
+    this.btnSettingsDone.addEventListener("click", () => this.closeSettings());
+    this.modalSettings.addEventListener("click", (event) => {
+      if (event.target === this.modalSettings) this.closeSettings();
+    });
+    window.addEventListener("keydown", (event) => {
+      if (
+        event.key === "Escape" &&
+        !this.modalSettings.classList.contains("hidden")
+      ) {
+        this.closeSettings();
+      }
+    });
+    this.settingSound.addEventListener("change", () => {
+      this.setSoundEnabled(this.settingSound.checked);
+    });
+    this.settingJoystick.addEventListener("change", () => {
+      this.gameSettings.virtualJoystick = this.settingJoystick.checked;
+      this.applyGameSettings();
+      this.saveGameSettings();
+    });
+    this.controlSideButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        this.gameSettings.controlSide = button.dataset.controlSide;
+        this.applyGameSettings();
+        this.saveGameSettings();
+      });
+    });
+    this.settingJoystickSize.addEventListener("input", () => {
+      this.gameSettings.joystickSize = Number(this.settingJoystickSize.value);
+      this.applyGameSettings();
+      this.saveGameSettings();
+    });
+
       );
     if (this.btnOpenFriends)
       this.btnOpenFriends.addEventListener("click", () =>
