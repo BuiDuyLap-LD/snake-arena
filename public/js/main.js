@@ -4031,18 +4031,21 @@ class GameClient {
       });
     }
 
-    if (this.btnSkillNitro)
-      this.btnSkillNitro.addEventListener("click", () =>
-        this.usePowerup("nitro"),
-      );
-    if (this.btnSkillVision)
-      this.btnSkillVision.addEventListener("click", () =>
-        this.usePowerup("vision"),
-      );
-    if (this.btnSkillMagnet)
-      this.btnSkillMagnet.addEventListener("click", () =>
-        this.usePowerup("magnet"),
-      );
+    const attachSkillHandler = (btn, skillName) => {
+      if (!btn) return;
+      const trigger = (e) => {
+        if (e.cancelable) e.preventDefault();
+        btn.classList.add("active");
+        setTimeout(() => btn.classList.remove("active"), 180);
+        this.usePowerup(skillName);
+      };
+      btn.addEventListener("touchstart", trigger, { passive: false });
+      btn.addEventListener("click", trigger);
+    };
+
+    attachSkillHandler(this.btnSkillNitro, "nitro");
+    attachSkillHandler(this.btnSkillVision, "vision");
+    attachSkillHandler(this.btnSkillMagnet, "magnet");
 
     this.emoteLoadout?.addEventListener("change", (event) => {
       const select = event.target.closest("select[data-slot]");
