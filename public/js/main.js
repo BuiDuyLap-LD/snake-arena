@@ -1778,6 +1778,109 @@ class GameClient {
         }),
       );
     }
+
+    // Show welcome/announcement notice once per session
+    this.showWelcomeNotice();
+  }
+
+  /** Shows the welcome/announcement modal once per browser session */
+  showWelcomeNotice() {
+    const STORAGE_KEY = "snake_welcome_seen";
+    // Skip if already shown this session
+    if (sessionStorage.getItem(STORAGE_KEY)) return;
+
+    const modal = document.getElementById("modal-welcome");
+    const card = document.getElementById("welcome-card");
+    const btnClose = document.getElementById("btn-close-welcome");
+    const btnPlay = document.getElementById("btn-welcome-play");
+    const chkDontShow = document.getElementById("welcome-dont-show");
+    const particleCanvas = document.getElementById("welcome-particles");
+
+    if (!modal || !card) return;
+
+    // Update title with player name if available
+    const titleEl = document.getElementById("welcome-title");
+    if (titleEl && this.currentUser?.username) {
+      titleEl.textContent = `Chào mừng, ${this.currentUser.username}! 🎉`;
+    }
+
+    // Show modal
+    modal.classList.remove("hidden");
+    sessionStorage.setItem(STORAGE_KEY, "1");
+
+    // Particle animation
+    this._startWelcomeParticles(particleCanvas);
+
+    const closeModal = () => {
+      card.classList.add("closing");
+      setTimeout(() => {
+        modal.classList.add("hidden");
+        card.classList.remove("closing");
+        this._stopWelcomeParticles();
+      }, 280);
+    };
+
+    btnClose?.addEventListener("click", closeModal, { once: true });
+    btnPlay?.addEventListener("click", closeModal, { once: true });
+
+    // Click outside card to close
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    }, { once: true });
+  }
+
+  _startWelcomeParticles(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const particles = Array.from({ length: 38 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 2.2 + 0.5,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: -Math.random() * 0.5 - 0.18,
+      alpha: Math.random() * 0.55 + 0.15,
+      color: ["255,200,60", "255,120,30", "200,100,255", "0,210,255"][
+        Math.floor(Math.random() * 4)
+      ],
+    }));
+
+    let animId;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.color},${p.alpha})`;
+        ctx.fill();
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.y < -4) { p.y = canvas.height + 4; p.x = Math.random() * canvas.width; }
+        if (p.x < -4) p.x = canvas.width + 4;
+        if (p.x > canvas.width + 4) p.x = -4;
+      });
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    this._welcomeParticleAnimId = animId;
+    this._welcomeResizeFn = resize;
+  }
+
+  _stopWelcomeParticles() {
+    if (this._welcomeParticleAnimId) {
+      cancelAnimationFrame(this._welcomeParticleAnimId);
+      this._welcomeParticleAnimId = null;
+    }
+    if (this._welcomeResizeFn) {
+      window.removeEventListener("resize", this._welcomeResizeFn);
+      this._welcomeResizeFn = null;
+    }
   }
 
   applyLoggedOutUI() {

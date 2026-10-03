@@ -1426,7 +1426,109 @@
       </div>
     </div>
 
+    <!-- ================= MODAL: WELCOME NOTICE ================= -->
+    <div id="modal-welcome" class="modal-overlay hidden welcome-overlay" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+      <div class="welcome-card" id="welcome-card">
+        <!-- Particle canvas background -->
+        <canvas id="welcome-particles" class="welcome-particles" aria-hidden="true"></canvas>
+
+        <!-- Close button -->
+        <button id="btn-close-welcome" class="welcome-close-btn" title="Đóng thông báo" aria-label="Đóng">✕</button>
+
+        <!-- Top glow bar -->
+        <div class="welcome-top-bar" aria-hidden="true">
+          <span class="welcome-top-badge">🔔 THÔNG BÁO MỚI</span>
+        </div>
+
+        <!-- Header area with mascot -->
+        <div class="welcome-header">
+          <div class="welcome-mascot" aria-hidden="true">🐍</div>
+          <div class="welcome-heading">
+            <h2 id="welcome-title" class="welcome-title">Chào mừng trở lại!</h2>
+            <p class="welcome-subtitle">Snake Arena 5v5 — Mùa giải đang nóng!</p>
+          </div>
+        </div>
+
+        <!-- Scrollable body -->
+        <div class="welcome-body">
+
+          <!-- Section: Game rules -->
+          <div class="welcome-section">
+            <div class="welcome-section-title">
+              <span class="ws-icon">⚔️</span> Luật chơi cơ bản
+            </div>
+            <ul class="welcome-rules">
+              <li><span class="rule-icon">🏆</span><span>Ăn nhiều thức ăn để tăng điểm — <strong>1 thức ăn = +1 điểm</strong></span></li>
+              <li><span class="rule-icon">💥</span><span>Va vào thân rắn khác hoặc tường → <strong>bạn thua cuộc</strong></span></li>
+              <li><span class="rule-icon">🗡️</span><span>Đâm đầu rắn kẻ địch để <strong>tiêu diệt và cướp điểm</strong></span></li>
+              <li><span class="rule-icon">⚡</span><span>Dùng kỹ năng đặc biệt đúng lúc để <strong>lật ngược tình thế</strong></span></li>
+              <li><span class="rule-icon">🎯</span><span>Trận <strong>5v5 Xếp hạng</strong>: ăn 15 điểm đầu tiên để thắng đội</span></li>
+            </ul>
+          </div>
+
+          <!-- Section: Season news -->
+          <div class="welcome-section">
+            <div class="welcome-section-title">
+              <span class="ws-icon">📢</span> Thông báo mùa giải
+            </div>
+            <div class="welcome-news-list">
+              <div class="welcome-news-item featured">
+                <span class="news-dot new"></span>
+                <div class="news-content">
+                  <span class="news-tag new-tag">MỚI</span>
+                  <span class="news-text">Cửa hàng mùa giải đã mở — 14 vật phẩm độc quyền đang chờ bạn!</span>
+                </div>
+              </div>
+              <div class="welcome-news-item">
+                <span class="news-dot update"></span>
+                <div class="news-content">
+                  <span class="news-tag upd-tag">UPDATE</span>
+                  <span class="news-text">Bảng xếp hạng thời gian thực được cải tiến — kiểm tra thứ hạng ngay!</span>
+                </div>
+              </div>
+              <div class="welcome-news-item">
+                <span class="news-dot info"></span>
+                <div class="news-content">
+                  <span class="news-tag tip-tag">MẸO</span>
+                  <span class="news-text">Thi đấu Xếp hạng mỗi ngày để nhận <strong>Shards</strong> và mở khóa vật phẩm Legendary!</span>
+                </div>
+              </div>
+              <div class="welcome-news-item">
+                <span class="news-dot warn"></span>
+                <div class="news-content">
+                  <span class="news-tag warn-tag">LƯU Ý</span>
+                  <span class="news-text">Tài khoản vi phạm (dùng bot, hack) sẽ bị khóa vĩnh viễn không khiếu nại.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Tips -->
+          <div class="welcome-section welcome-tips-section">
+            <div class="welcome-tips-grid">
+              <div class="welcome-tip-chip">🌀 Dùng kỹ năng Dash để thoát hiểm nhanh</div>
+              <div class="welcome-tip-chip">🛡️ Khiên giảm 50% sát thương va chạm</div>
+              <div class="welcome-tip-chip">🍄 Thức ăn Mega cho +5 điểm một lần</div>
+              <div class="welcome-tip-chip">🤝 Kết bạn & tạo phòng Solo 5v5</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer action -->
+        <div class="welcome-footer">
+          <label class="welcome-no-show">
+            <input type="checkbox" id="welcome-dont-show"> Không hiển thị lại phiên này
+          </label>
+          <button id="btn-welcome-play" class="welcome-play-btn">
+            <span>🎮</span> Vào chơi ngay!
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= MODAL: PLAYER SHOP ================= -->
+
     <div id="modal-shop" class="modal-overlay hidden">
       <div class="modal-content shop-modal-card">
         <!-- Animated background shimmer -->
