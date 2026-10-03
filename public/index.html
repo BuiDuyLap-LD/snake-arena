@@ -1429,63 +1429,73 @@
     <!-- ================= MODAL: PLAYER SHOP ================= -->
     <div id="modal-shop" class="modal-overlay hidden">
       <div class="modal-content shop-modal-card">
-        <button id="btn-close-shop" class="modal-close-btn" title="Đóng">
-          ✕
-        </button>
+        <!-- Animated background shimmer -->
+        <div class="shop-bg-shimmer" aria-hidden="true">
+          <div class="shop-bg-orb shop-bg-orb-1"></div>
+          <div class="shop-bg-orb shop-bg-orb-2"></div>
+          <div class="shop-bg-orb shop-bg-orb-3"></div>
+        </div>
+
+        <button id="btn-close-shop" class="shop-close-btn" title="Đóng">✕</button>
+
+        <!-- Shop Header -->
         <div class="shop-header">
           <div class="shop-title-block">
-            <span class="shop-tag">SNAKE ARENA · SEASON MARKET</span>
-            <h3>Kho báu đấu trường</h3>
+            <div class="shop-title-eyebrow">
+              <span class="shop-season-badge">SEASON 1</span>
+              <span class="shop-tag">SNAKE ARENA · SEASON MARKET</span>
+            </div>
+            <h3 class="shop-title-text">
+              <span class="shop-title-icon">🛒</span>
+              Kho Báu Đấu Trường
+            </h3>
+            <p class="shop-title-sub">Sở hữu ngoại hình độc đáo, thống trị đấu trường!</p>
           </div>
           <div class="shop-wallet" aria-label="Số dư tài khoản">
-            <span class="shop-wallet-coins"
-              >🪙 <strong id="shop-coins">250</strong></span
-            >
-            <span class="shop-wallet-shards"
-              >💎 <strong id="shop-shards">12</strong></span
-            >
-            <span class="shop-wallet-tickets"
-              >🎫 <strong id="shop-tickets">3</strong></span
-            >
+            <div class="shop-wallet-chip coins">
+              <span class="wallet-chip-icon">🪙</span>
+              <div class="wallet-chip-info">
+                <span class="wallet-chip-label">Coins</span>
+                <strong id="shop-coins" class="wallet-chip-val">250</strong>
+              </div>
+            </div>
+            <div class="shop-wallet-chip shards">
+              <span class="wallet-chip-icon">💎</span>
+              <div class="wallet-chip-info">
+                <span class="wallet-chip-label">Shards</span>
+                <strong id="shop-shards" class="wallet-chip-val">12</strong>
+              </div>
+            </div>
+            <div class="shop-wallet-chip tickets">
+              <span class="wallet-chip-icon">🎫</span>
+              <div class="wallet-chip-info">
+                <span class="wallet-chip-label">Tickets</span>
+                <strong id="shop-tickets" class="wallet-chip-val">3</strong>
+              </div>
+            </div>
           </div>
         </div>
+
+        <!-- Category Navigation -->
         <nav class="shop-categories" aria-label="Danh mục vật phẩm">
-          <button
-            class="shop-category-button active"
-            data-category="all"
-            aria-pressed="true"
-          >
-            Tất cả <span>14</span>
+          <button class="shop-category-button active" data-category="all" aria-pressed="true">
+            <span class="cat-icon">🌟</span><span class="cat-label">Tất cả</span><span class="cat-count">14</span>
           </button>
-          <button
-            class="shop-category-button"
-            data-category="skins"
-            aria-pressed="false"
-          >
-            Ngoại hình
+          <button class="shop-category-button" data-category="skins" aria-pressed="false">
+            <span class="cat-icon">🐍</span><span class="cat-label">Ngoại hình</span>
           </button>
-          <button
-            class="shop-category-button"
-            data-category="trails"
-            aria-pressed="false"
-          >
-            Vệt sáng
+          <button class="shop-category-button" data-category="trails" aria-pressed="false">
+            <span class="cat-icon">✨</span><span class="cat-label">Vệt sáng</span>
           </button>
-          <button
-            class="shop-category-button"
-            data-category="emotes"
-            aria-pressed="false"
-          >
-            Biểu cảm
+          <button class="shop-category-button" data-category="emotes" aria-pressed="false">
+            <span class="cat-icon">🎭</span><span class="cat-label">Biểu cảm</span>
           </button>
-          <button
-            class="shop-category-button"
-            data-category="boosts"
-            aria-pressed="false"
-          >
-            Hỗ trợ
+          <button class="shop-category-button" data-category="boosts" aria-pressed="false">
+            <span class="cat-icon">⚡</span><span class="cat-label">Hỗ trợ</span>
           </button>
         </nav>
+
+        <!-- Item Grid -->
         <div class="shop-grid" id="shop-grid"></div>
       </div>
     </div>

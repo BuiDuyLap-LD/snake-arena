@@ -1084,24 +1084,34 @@ class GameClient {
             ? equipped
             : owned || !affordable;
       const card = document.createElement("div");
-      card.className = `shop-item-card rarity-${item.rarity.toLowerCase()}`;
+      const isEquipped = equipped || emoteEquipped;
+      card.className = [
+        "shop-item-card",
+        `rarity-${item.rarity.toLowerCase()}`,
+        owned ? "is-owned" : "",
+        isEquipped ? "is-equipped" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
       card.innerHTML = `
         <div class="shop-item-top">
           <span class="shop-item-badge ${item.rarity.toLowerCase()}">${item.rarity}</span>
           <span class="shop-item-type">${item.type === "skin" ? "Ngoại hình" : item.type === "trail" ? "Vệt sáng" : item.type === "emote" ? "Biểu cảm" : "Hỗ trợ"}</span>
         </div>
         <div class="shop-item-art" style="--item-color: ${item.color || "#ffb84d"}" aria-hidden="true"><span>${item.icon || "✨"}</span></div>
-        <div class="shop-item-name">${item.name}</div>
-        <div class="shop-item-bonus">${item.bonus}</div>
-        <p class="shop-item-desc">${item.description}</p>
-        <div class="shop-item-price">
-          ${item.price.coins ? `<span>🪙 ${item.price.coins}</span>` : ""}
-          ${item.price.shards ? `<span>💎 ${item.price.shards}</span>` : ""}
-          ${item.price.tickets ? `<span>🎫 ${item.price.tickets}</span>` : ""}
+        <div class="shop-item-body">
+          <div class="shop-item-name">${item.name}</div>
+          <div class="shop-item-bonus">${item.bonus}</div>
+          <p class="shop-item-desc">${item.description}</p>
+          <div class="shop-item-price">
+            ${item.price.coins ? `<span>🪙 ${item.price.coins}</span>` : ""}
+            ${item.price.shards ? `<span>💎 ${item.price.shards}</span>` : ""}
+            ${item.price.tickets ? `<span>🎫 ${item.price.tickets}</span>` : ""}
+          </div>
+          <button class="btn-buy-item" data-action="${buttonAction}" data-item-id="${item.id}" ${disabled ? "disabled" : ""}>
+            ${buttonLabel}
+          </button>
         </div>
-        <button class="btn-buy-item" data-action="${buttonAction}" data-item-id="${item.id}" ${disabled ? "disabled" : ""}>
-          ${buttonLabel}
-        </button>
       `;
       this.shopGrid.appendChild(card);
     });
