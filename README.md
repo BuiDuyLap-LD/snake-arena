@@ -2,6 +2,10 @@
 
 Dự án game **Rắn Săn Mồi Nhiều Người Chơi 2D (Multiplayer Snake Arena)** thời gian thực với đồ họa Cyber Neon hiện đại, mô hình Server-Authoritative, hỗ trợ 2–4+ người chơi cùng phòng và hệ thống Bot AI thông minh.
 
+## ✨ Giao diện v2.0
+
+Sảnh được chia thành các khu vực riêng: Đấu, Tiến trình, Xếp hạng và Hướng dẫn; Trò chuyện tiếp tục mở trong khu vực xã hội. Bản cập nhật tập trung vào điều hướng rõ ràng, bố cục co giãn cho điện thoại/máy tính, giảm hiệu ứng blur tốn tài nguyên và bỏ tải font bên ngoài để giao diện khởi tạo nhanh hơn. Phần hiển thị không thay đổi luật chơi hay mô phỏng phía máy chủ.
+
 ---
 
 ## 🌟 Tính Năng Nổi Bật

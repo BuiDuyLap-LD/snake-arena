@@ -1310,6 +1310,8 @@ class GameClient {
     this.btnLobbyPlayView = document.getElementById("btn-lobby-play-view");
     this.btnLobbyChatView = document.getElementById("btn-lobby-chat-view");
     this.lobbySocialBadge = document.getElementById("lobby-social-badge");
+    this.lobbyViewTitle = document.getElementById("lobby-view-title");
+    this.lobbyViewCaption = document.getElementById("lobby-view-caption");
 
     // Account Widget Elements
     this.btnOpenAuth = document.getElementById("btn-open-auth");
@@ -2938,17 +2940,44 @@ class GameClient {
   // ================= FRIENDS & SOCIAL HUB =================
 
   setLobbyView(view) {
-    this.lobbyView = view === "chat" ? "chat" : "play";
-    const showingChat = this.lobbyView === "chat";
+    const viewCopy = {
+      play: [
+        "Chọn chế độ và vào trận",
+        "Tùy chỉnh chiến binh, chọn đấu trường rồi sẵn sàng săn mồi.",
+      ],
+      progress: [
+        "Hành trình chiến binh",
+        "Theo dõi cấp độ, nâng cấp rắn và hoàn thành nhiệm vụ mùa giải.",
+      ],
+      ranking: [
+        "Bảng xếp hạng cao thủ",
+        "Vinh danh những người chơi thật với thành tích nổi bật nhất.",
+      ],
+      guide: [
+        "Làm chủ đấu trường",
+        "Xem nhanh kỹ năng và phím điều khiển trước khi vào trận.",
+      ],
+      chat: [
+        "Chọn chế độ và vào trận",
+        "Tùy chỉnh chiến binh, chọn đấu trường rồi sẵn sàng săn mồi.",
+      ],
+    };
+    this.lobbyView = Object.hasOwn(viewCopy, view) ? view : "play";
+    if (this.screenLobby) {
+      this.screenLobby.dataset.lobbyView =
+        this.lobbyView === "chat" ? "play" : this.lobbyView;
+      this.screenLobby
+        .querySelectorAll("[data-lobby-view-target]")
+        .forEach((button) => {
+          const active = button.dataset.lobbyViewTarget === this.lobbyView;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-pressed", String(active));
+        });
+    }
 
-    if (this.btnLobbyPlayView) {
-      this.btnLobbyPlayView.classList.toggle("active", !showingChat);
-      this.btnLobbyPlayView.setAttribute("aria-pressed", String(!showingChat));
-    }
-    if (this.btnLobbyChatView) {
-      this.btnLobbyChatView.classList.toggle("active", showingChat);
-      this.btnLobbyChatView.setAttribute("aria-pressed", String(showingChat));
-    }
+    const [title, caption] = viewCopy[this.lobbyView];
+    if (this.lobbyViewTitle) this.lobbyViewTitle.textContent = title;
+    if (this.lobbyViewCaption) this.lobbyViewCaption.textContent = caption;
   }
 
   openFriendsModal() {
@@ -4271,6 +4300,17 @@ class GameClient {
       this.btnLobbyChatView.addEventListener("click", () =>
         this.openFriendsModal(),
       );
+    if (this.screenLobby)
+      this.screenLobby
+        .querySelectorAll(
+          '[data-lobby-view-target]:not(#btn-lobby-play-view):not(#btn-lobby-chat-view)',
+        )
+        .forEach((button) => {
+          button.addEventListener("click", () => {
+            this.closeFriendsModal();
+            this.setLobbyView(button.dataset.lobbyViewTarget);
+          });
+        });
     if (this.btnOpenFriends)
       this.btnOpenFriends.addEventListener("click", () =>
         this.openFriendsModal(),

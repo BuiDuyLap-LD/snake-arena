@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#050811" />
-    <title>Snake Arena 5v5 | Đấu Trường Rắn Săn Mồi</title>
+    <title>Snake Arena 5v5 | v2.0</title>
     <meta
       name="description"
-      content="Game rắn săn mồi 2D nhiều người chơi trực tuyến với tài khoản cố định lưu vĩnh viễn Rank, kỹ năng cường hóa, và bảng rank toàn cầu!"
+      content="Snake Arena 5v5 v2.0 — đấu trường rắn trực tuyến với giao diện tối ưu, nhiều chế độ chơi và kỹ năng chiến đấu."
     />
     <link rel="stylesheet" href="css/style.css" />
     <link
@@ -27,7 +27,11 @@
     <canvas id="game-canvas"></canvas>
 
     <!-- ================= LOBBY / MAIN MENU ================= -->
-    <div id="screen-lobby" class="overlay-screen hidden">
+    <div
+      id="screen-lobby"
+      class="overlay-screen hidden"
+      data-lobby-view="play"
+    >
       <div class="lobby-wrapper">
         <!-- Lobby Header -->
         <header class="lobby-header">
@@ -41,9 +45,9 @@
             </div>
           </div>
           <div class="lobby-header-actions">
-            <div class="app-version-banner" aria-label="Phiên bản hiện tại">
-              <span class="version-tag">v1.0</span>
-              <span class="version-meta">Dev by DuyLap</span>
+            <div class="app-version-banner" aria-label="Phiên bản 2.0">
+              <span class="version-tag">v2.0</span>
+              <span class="version-meta">DEV BY DUYLAP</span>
             </div>
             <div class="online-indicator">
               <span class="online-dot"></span>
@@ -100,14 +104,40 @@
             id="btn-lobby-play-view"
             class="lobby-primary-tab active"
             type="button"
+            data-lobby-view-target="play"
             aria-pressed="true"
           >
-            <span aria-hidden="true">⚔️</span> Chơi
+            <span aria-hidden="true">⚔️</span> Đấu
+          </button>
+          <button
+            class="lobby-primary-tab"
+            type="button"
+            data-lobby-view-target="progress"
+            aria-pressed="false"
+          >
+            <span aria-hidden="true">✨</span> Tiến trình
+          </button>
+          <button
+            class="lobby-primary-tab"
+            type="button"
+            data-lobby-view-target="ranking"
+            aria-pressed="false"
+          >
+            <span aria-hidden="true">🏆</span> Xếp hạng
+          </button>
+          <button
+            class="lobby-primary-tab"
+            type="button"
+            data-lobby-view-target="guide"
+            aria-pressed="false"
+          >
+            <span aria-hidden="true">📖</span> Hướng dẫn
           </button>
           <button
             id="btn-lobby-chat-view"
             class="lobby-primary-tab"
             type="button"
+            data-lobby-view-target="chat"
             aria-pressed="false"
           >
             <span aria-hidden="true">💬</span> Trò chuyện
@@ -119,6 +149,14 @@
             >
           </button>
         </nav>
+
+        <div class="lobby-view-heading" aria-live="polite">
+          <span class="lobby-view-eyebrow">SNAKE ARENA <span>V2.0</span></span>
+          <h2 id="lobby-view-title">Chọn chế độ và vào trận</h2>
+          <p id="lobby-view-caption">
+            Tùy chỉnh chiến binh, chọn đấu trường rồi sẵn sàng săn mồi.
+          </p>
+        </div>
 
         <!-- Lobby Main Grid -->
         <div class="lobby-grid">
@@ -419,23 +457,6 @@
               <span id="join-mode-label">VÀO XẾP HẠNG</span>
             </button>
 
-            <!-- Career Quick Stats -->
-            <div class="career-stats-row">
-              <div class="career-stat-item">
-                <span class="cs-label">Kỷ lục điểm</span>
-                <span class="cs-val" id="my-high-score">0</span>
-              </div>
-              <div class="cs-divider"></div>
-              <div class="career-stat-item">
-                <span class="cs-label">Tổng Kills</span>
-                <span class="cs-val" id="my-total-kills">0</span>
-              </div>
-              <div class="cs-divider"></div>
-              <div class="career-stat-item">
-                <span class="cs-label">Số trận</span>
-                <span class="cs-val" id="my-matches-count">0</span>
-              </div>
-            </div>
           </div>
 
           <aside class="lobby-side-column" aria-label="Tiến trình và cộng đồng">
@@ -563,6 +584,23 @@
               <div id="quest-list" class="quest-list"></div>
             </details>
 
+            <div class="career-stats-row">
+              <div class="career-stat-item">
+                <span class="cs-label">Kỷ lục điểm</span>
+                <span class="cs-val" id="my-high-score">0</span>
+              </div>
+              <div class="cs-divider"></div>
+              <div class="career-stat-item">
+                <span class="cs-label">Tổng Kills</span>
+                <span class="cs-val" id="my-total-kills">0</span>
+              </div>
+              <div class="cs-divider"></div>
+              <div class="career-stat-item">
+                <span class="cs-label">Số trận</span>
+                <span class="cs-val" id="my-matches-count">0</span>
+              </div>
+            </div>
+
             <!-- Right Panel: Global Leaderboard (Human Players Only) -->
             <div class="lobby-card card-rank">
               <div class="card-header flex-between">
@@ -607,7 +645,7 @@
         <!-- Bottom Skill & Item Guide -->
         <footer class="lobby-skills-footer">
           <h3 class="skills-guide-title">
-            ✨ Hệ Thống Vật Phẩm Cường Hóa (Nhặt trên Map & Dùng Thủ Công)
+            ✨ Kỹ năng trong trận
           </h3>
           <div class="powerups-guide-grid">
             <div class="guide-item">
@@ -630,6 +668,20 @@
                 <strong>Nam Châm Hút Hồn:</strong> Hút dồn dập toàn bộ hạt thức
                 ăn trong bán kính 420px trong 6 giây!
               </div>
+            </div>
+          </div>
+          <div class="controls-guide-grid" aria-label="Điều khiển">
+            <div class="controls-guide-item">
+              <kbd>Chuột</kbd><span>Điều hướng rắn</span>
+            </div>
+            <div class="controls-guide-item">
+              <kbd>Space</kbd><span>Giữ để tăng tốc</span>
+            </div>
+            <div class="controls-guide-item">
+              <kbd>1 — 3</kbd><span>Dùng kỹ năng</span>
+            </div>
+            <div class="controls-guide-item">
+              <kbd>4 — 7</kbd><span>Gửi biểu cảm</span>
             </div>
           </div>
         </footer>
