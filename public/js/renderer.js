@@ -95,6 +95,7 @@ class GameRenderer {
       currentIds.add(s.id);
       if (!s.alive) this.activeEmotes.delete(s.id);
       let interp = this.interpolatedSnakes.get(s.id);
+      const serverBody = this._decodeBody(s.body, s.length, s.bodyStep);
 
       if (!interp) {
         interp = {
@@ -114,7 +115,8 @@ class GameRenderer {
           isBoosting: s.isBoosting,
           shield: s.shield,
           length: s.length,
-          body: this._decodeBody(s.body, s.length, s.bodyStep),
+          body: serverBody.map((segment) => ({ ...segment })),
+          targetBody: serverBody,
           activeEffects: s.activeEffects || { nitro: 0, vision: 0, magnet: 0 },
           inventory: s.inventory || { nitro: 0, vision: 0, magnet: 0 },
         };
@@ -134,6 +136,7 @@ class GameRenderer {
           magnet: 0,
         };
         interp.inventory = s.inventory || { nitro: 0, vision: 0, magnet: 0 };
+        interp.targetBody = serverBody;
 
         const distFromCurrent = Math.hypot(
           s.head.x - interp.head.x,
@@ -146,15 +149,14 @@ class GameRenderer {
           interp.targetHead.y = s.head.y;
           interp.angle = s.angle;
           interp.targetAngle = s.angle;
-          interp.body = this._decodeBody(s.body, s.length, s.bodyStep);
+          interp.body = serverBody.map((segment) => ({ ...segment }));
         } else {
           interp.targetHead.x = s.head.x;
           interp.targetHead.y = s.head.y;
           interp.targetAngle = s.angle;
 
-          // Sync body when actual segment count changes significantly
-          if (Math.abs(interp.body.length - s.length) > 3) {
-            interp.body = this._decodeBody(s.body);
+          if (interp.body.length !== serverBody.length) {
+            interp.body = serverBody.map((segment) => ({ ...segment }));
           }
         }
       }
@@ -237,6 +239,13 @@ class GameRenderer {
           }
           prevX = seg.x;
           prevY = seg.y;
+        }
+
+        if (snake.targetBody && snake.targetBody.length === body.length) {
+          for (let i = 0; i < body.length; i++) {
+            body[i].x += (snake.targetBody[i].x - body[i].x) * 0.35;
+            body[i].y += (snake.targetBody[i].y - body[i].y) * 0.35;
+          }
         }
       }
 
